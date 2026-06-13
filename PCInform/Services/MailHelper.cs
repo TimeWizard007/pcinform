@@ -1,23 +1,27 @@
 using System.Diagnostics;
+using PCInform.Configuration;
 
-namespace DaneKomputera.Services;
+namespace PCInform.Services;
 
 internal static class MailHelper
 {
-    private const string HelpdeskEmail = "helpdesk@itsolution.pl";
-
     public static bool TryOpenHelpdeskEmail()
     {
-        return TryOpenEmail(HelpdeskEmail);
+        return TryOpenEmail(ConfigurationService.Current.Support.Email);
     }
 
     public static bool TryOpenReport(string subject, string body)
     {
-        return TryOpenEmail(HelpdeskEmail, subject, body);
+        return TryOpenEmail(ConfigurationService.Current.Support.Email, subject, body);
     }
 
     public static bool TryOpenEmail(string to, string? subject = null, string? body = null)
     {
+        if (string.IsNullOrWhiteSpace(to))
+        {
+            return false;
+        }
+
         if (OutlookMailService.TryCreateDraft(to, subject ?? string.Empty, body ?? string.Empty))
         {
             return true;
@@ -36,13 +40,11 @@ internal static class MailHelper
             }
 
             var url = BuildMailtoUrl(to, subject, body);
-            var startInfo = new ProcessStartInfo
+            Process.Start(new ProcessStartInfo
             {
                 FileName = url,
                 UseShellExecute = true
-            };
-
-            Process.Start(startInfo);
+            });
             return true;
         }
         catch

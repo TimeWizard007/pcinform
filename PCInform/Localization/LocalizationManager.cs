@@ -1,4 +1,6 @@
-namespace DaneKomputera.Localization;
+using PCInform.Configuration;
+
+namespace PCInform.Localization;
 
 internal static class LocalizationManager
 {
@@ -23,21 +25,31 @@ internal static class LocalizationManager
         LanguageChanged?.Invoke(null, EventArgs.Empty);
     }
 
-    public static string NoData => CurrentLanguage == AppLanguage.Polish ? "brak danych" : "no data";
+    public static AppLanguage ParseLanguage(string? code) => code?.ToLowerInvariant() switch
+    {
+        "en" or "english" => AppLanguage.English,
+        _ => AppLanguage.Polish
+    };
 
+    public static string NoData => CurrentLanguage == AppLanguage.Polish ? "brak danych" : "no data";
     public static string LoadingText => CurrentLanguage == AppLanguage.Polish ? "Ładowanie..." : "Loading...";
 
-    public static string WindowTitle => "Dane komputera";
+    public static string WindowTitle => ConfigurationService.Current.Application.WindowTitle;
+    public static string BannerTitle => ConfigurationService.Current.Application.BannerText;
 
-    public static string BannerTitle => "Service Desk IT Solution";
-
-    public static string ContactSection => CurrentLanguage == AppLanguage.Polish
-        ? "Kontakt z Service Desk"
-        : "Service Desk contact";
+    public static string ContactSection
+    {
+        get
+        {
+            var company = ConfigurationService.Current.Support.CompanyName;
+            return CurrentLanguage == AppLanguage.Polish
+                ? $"Kontakt — {company}"
+                : $"Contact — {company}";
+        }
+    }
 
     public static string EmailLabel => CurrentLanguage == AppLanguage.Polish ? "E-mail:" : "Email:";
-
-    public static string HotlineLabel => CurrentLanguage == AppLanguage.Polish ? "Infolinia:" : "Hotline:";
+    public static string HotlineLabel => CurrentLanguage == AppLanguage.Polish ? "Infolinia:" : "Phone:";
 
     public static string ComputerDataSection => CurrentLanguage == AppLanguage.Polish
         ? "Dane komputera"
@@ -55,17 +67,9 @@ internal static class LocalizationManager
         ? "System operacyjny:"
         : "Operating system:";
 
-    public static string IpAddressLabel => CurrentLanguage == AppLanguage.Polish
-        ? "Adres IP:"
-        : "IP address:";
-
-    public static string DnsLabel => CurrentLanguage == AppLanguage.Polish
-        ? "Serwery DNS:"
-        : "DNS servers:";
-
-    public static string UptimeLabel => CurrentLanguage == AppLanguage.Polish
-        ? "Czas pracy systemu:"
-        : "Uptime:";
+    public static string IpAddressLabel => CurrentLanguage == AppLanguage.Polish ? "Adres IP:" : "IP address:";
+    public static string DnsLabel => CurrentLanguage == AppLanguage.Polish ? "Serwery DNS:" : "DNS servers:";
+    public static string UptimeLabel => CurrentLanguage == AppLanguage.Polish ? "Czas pracy systemu:" : "Uptime:";
 
     public static string ManufacturerLabel => CurrentLanguage == AppLanguage.Polish
         ? "Producent i model:"
@@ -79,49 +83,26 @@ internal static class LocalizationManager
         ? "Typ urządzenia:"
         : "Device type:";
 
-    public static string UserDataSection => CurrentLanguage == AppLanguage.Polish
-        ? "Twoje dane"
-        : "Your data";
-
-    public static string UserLoginLabel => CurrentLanguage == AppLanguage.Polish
-        ? "Login użytkownika:"
-        : "User login:";
-
-    public static string UserDisplayNameLabel => CurrentLanguage == AppLanguage.Polish
-        ? "Nazwa użytkownika:"
-        : "Display name:";
+    public static string UserDataSection => CurrentLanguage == AppLanguage.Polish ? "Twoje dane" : "Your data";
+    public static string UserLoginLabel => CurrentLanguage == AppLanguage.Polish ? "Login użytkownika:" : "User login:";
+    public static string UserDisplayNameLabel => CurrentLanguage == AppLanguage.Polish ? "Nazwa użytkownika:" : "Display name:";
 
     public static string TeamViewerSection => "TeamViewer";
-
     public static string TeamViewerStatusLabel => "Status:";
 
     public static string CopyButton => CurrentLanguage == AppLanguage.Polish
         ? "Kopiuj dane do schowka"
         : "Copy data to clipboard";
 
-    public static string RefreshButton => CurrentLanguage == AppLanguage.Polish
-        ? "Odśwież"
-        : "Refresh";
-
-    public static string ReportButton => CurrentLanguage == AppLanguage.Polish
-        ? "Zgłoś problem"
-        : "Report problem";
-
-    public static string CloseButton => CurrentLanguage == AppLanguage.Polish
-        ? "Zamknij"
-        : "Close";
+    public static string RefreshButton => CurrentLanguage == AppLanguage.Polish ? "Odśwież" : "Refresh";
+    public static string ReportButton => CurrentLanguage == AppLanguage.Polish ? "Zgłoś problem" : "Report problem";
+    public static string CloseButton => CurrentLanguage == AppLanguage.Polish ? "Zamknij" : "Close";
 
     public static string LanguagePolish => "Polski";
-
     public static string LanguageEnglish => "English";
 
-    public static string TeamViewerInstalled => CurrentLanguage == AppLanguage.Polish
-        ? "Zainstalowany"
-        : "Installed";
-
-    public static string TeamViewerNotInstalled => CurrentLanguage == AppLanguage.Polish
-        ? "Nie zainstalowano"
-        : "Not installed";
+    public static string TeamViewerInstalled => CurrentLanguage == AppLanguage.Polish ? "Zainstalowany" : "Installed";
+    public static string TeamViewerNotInstalled => CurrentLanguage == AppLanguage.Polish ? "Nie zainstalowano" : "Not installed";
 
     public static string CopySuccessTitle => WindowTitle;
 
@@ -137,9 +118,14 @@ internal static class LocalizationManager
         ? "Nie udało się otworzyć klienta poczty"
         : "Unable to open mail client";
 
-    public static string ReportSubject(string computerName) => CurrentLanguage == AppLanguage.Polish
-        ? $"Pomoc - {computerName}"
-        : $"Support request - {computerName}";
+    public static string ReportSubject(string computerName)
+    {
+        var support = ConfigurationService.Current.Support;
+        var prefix = CurrentLanguage == AppLanguage.Polish
+            ? support.EmailSubjectPrefixPl
+            : support.EmailSubjectPrefixEn;
+        return $"{prefix} - {computerName}";
+    }
 
     public static string GetTeamViewerStatus(bool installed) =>
         installed ? TeamViewerInstalled : TeamViewerNotInstalled;
@@ -151,4 +137,11 @@ internal static class LocalizationManager
     public static string LaunchTeamViewerError => CurrentLanguage == AppLanguage.Polish
         ? "Nie udało się uruchomić TeamViewer."
         : "Could not launch TeamViewer.";
+
+    public static string UpdateAvailableTitle => WindowTitle;
+
+    public static string UpdateAvailableMessage(string version, string releaseNotes) =>
+        CurrentLanguage == AppLanguage.Polish
+            ? $"Dostępna jest nowa wersja {version}.\n\n{releaseNotes}\n\nCzy chcesz pobrać aktualizację?"
+            : $"A new version {version} is available.\n\n{releaseNotes}\n\nDo you want to download the update?";
 }

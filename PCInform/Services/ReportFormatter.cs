@@ -1,7 +1,8 @@
-using DaneKomputera.Localization;
-using DaneKomputera.Models;
+using PCInform.Configuration;
+using PCInform.Localization;
+using PCInform.Models;
 
-namespace DaneKomputera.Services;
+namespace PCInform.Services;
 
 internal static class ReportFormatter
 {
@@ -17,7 +18,7 @@ internal static class ReportFormatter
 
     private static string FormatPolishClipboard(SystemInfoData data)
     {
-        return
+        var report =
 $"""
 ---------------------------------
 DANE KOMPUTERA
@@ -37,18 +38,15 @@ TWOJE DANE
 ---------------------------------
 Login: {data.UserLogin}
 Nazwa użytkownika: {data.UserDisplayName}
-
----------------------------------
-TEAMVIEWER
----------------------------------
-Status: {GetTeamViewerStatus(data, AppLanguage.Polish)}
-Atera: {GetAteraStatus(data, AppLanguage.Polish)}
 """;
+
+        report += BuildAgentSection(data, AppLanguage.Polish);
+        return report;
     }
 
     private static string FormatEnglishClipboard(SystemInfoData data)
     {
-        return
+        var report =
 $"""
 ---------------------------------
 COMPUTER DATA
@@ -68,18 +66,15 @@ USER DATA
 ---------------------------------
 Login: {data.UserLogin}
 Display name: {data.UserDisplayName}
-
----------------------------------
-TEAMVIEWER
----------------------------------
-Status: {GetTeamViewerStatus(data, AppLanguage.English)}
-Atera: {GetAteraStatus(data, AppLanguage.English)}
 """;
+
+        report += BuildAgentSection(data, AppLanguage.English);
+        return report;
     }
 
     private static string FormatPolishReportEmail(SystemInfoData data)
     {
-        return
+        var report =
 $"""
 ---
 
@@ -105,15 +100,15 @@ Typ urządzenia: {data.MachineType}
 
 Login: {data.UserLogin}
 Nazwa użytkownika: {data.UserDisplayName}
-
-TeamViewer: {GetTeamViewerStatus(data, AppLanguage.Polish)}
-Atera: {GetAteraStatus(data, AppLanguage.Polish)}
 """;
+
+        report += BuildInlineAgentLines(data, AppLanguage.Polish);
+        return report;
     }
 
     private static string FormatEnglishReportEmail(SystemInfoData data)
     {
-        return
+        var report =
 $"""
 ---
 
@@ -139,10 +134,59 @@ Device type: {data.MachineType}
 
 Login: {data.UserLogin}
 Display name: {data.UserDisplayName}
-
-TeamViewer: {GetTeamViewerStatus(data, AppLanguage.English)}
-Atera: {GetAteraStatus(data, AppLanguage.English)}
 """;
+
+        report += BuildInlineAgentLines(data, AppLanguage.English);
+        return report;
+    }
+
+    private static string BuildAgentSection(SystemInfoData data, AppLanguage language)
+    {
+        var features = ConfigurationService.Current.Features;
+        if (!features.ShowTeamViewer && !features.IncludeAteraInReports)
+        {
+            return string.Empty;
+        }
+
+        var section =
+            language == AppLanguage.Polish
+                ? "\n\n---------------------------------\nAGENTY\n---------------------------------\n"
+                : "\n\n---------------------------------\nAGENTS\n---------------------------------\n";
+
+        var lines = new List<string>();
+        if (features.ShowTeamViewer)
+        {
+            lines.Add(language == AppLanguage.Polish
+                ? $"TeamViewer: {GetTeamViewerStatus(data, language)}"
+                : $"TeamViewer: {GetTeamViewerStatus(data, language)}");
+        }
+
+        if (features.IncludeAteraInReports)
+        {
+            lines.Add(language == AppLanguage.Polish
+                ? $"Atera: {GetAteraStatus(data, language)}"
+                : $"Atera: {GetAteraStatus(data, language)}");
+        }
+
+        return lines.Count == 0 ? string.Empty : section + string.Join('\n', lines) + '\n';
+    }
+
+    private static string BuildInlineAgentLines(SystemInfoData data, AppLanguage language)
+    {
+        var features = ConfigurationService.Current.Features;
+        var lines = new List<string>();
+
+        if (features.ShowTeamViewer)
+        {
+            lines.Add($"TeamViewer: {GetTeamViewerStatus(data, language)}");
+        }
+
+        if (features.IncludeAteraInReports)
+        {
+            lines.Add($"Atera: {GetAteraStatus(data, language)}");
+        }
+
+        return lines.Count == 0 ? string.Empty : '\n' + string.Join('\n', lines) + '\n';
     }
 
     private static string GetTeamViewerStatus(SystemInfoData data, AppLanguage language) =>

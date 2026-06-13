@@ -1,12 +1,14 @@
 using System.Diagnostics;
 using System.Management;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Principal;
-using DaneKomputera.Localization;
-using DaneKomputera.Models;
+using PCInform.Configuration;
+using PCInform.Localization;
+using PCInform.Models;
 
-namespace DaneKomputera.Services;
+namespace PCInform.Services;
 
 internal static class SystemInfoService
 {
@@ -31,34 +33,20 @@ internal static class SystemInfoService
 
     private static readonly string[] VirtualAdapterKeywords =
     [
-        "docker",
-        "vethernet",
-        "virtualbox",
-        "vmware",
-        "hyper-v",
-        "virtual",
-        "tap-windows",
-        "wintun",
-        "npcap",
-        "bluetooth",
-        "loopback",
-        "tunnel",
-        "pseudo",
-        "wan miniport",
-        "miniport",
-        "isatap",
-        "teredo",
-        "6to4"
+        "docker", "vethernet", "virtualbox", "vmware", "hyper-v", "virtual",
+        "tap-windows", "wintun", "npcap", "bluetooth", "loopback", "tunnel",
+        "pseudo", "wan miniport", "miniport", "isatap", "teredo", "6to4"
     ];
 
     public static SystemInfoData Collect(AppLanguage language)
     {
+        var features = ConfigurationService.Current.Features;
         var noData = language == AppLanguage.Polish ? "brak danych" : "no data";
         var outsideAd = language == AppLanguage.Polish
             ? "poza Active Directory"
             : "outside Active Directory";
 
-        var teamViewerPath = FindTeamViewerPath();
+        var teamViewerPath = features.ShowTeamViewer ? FindTeamViewerPath() : null;
 
         return new SystemInfoData
         {
@@ -75,7 +63,7 @@ internal static class SystemInfoService
             UserDisplayName = SafeGet(GetUserDisplayName, noData),
             TeamViewerInstalled = teamViewerPath is not null,
             TeamViewerPath = teamViewerPath,
-            AteraInstalled = IsAteraInstalled()
+            AteraInstalled = features.DetectAtera && IsAteraInstalled()
         };
     }
 
@@ -143,14 +131,14 @@ internal static class SystemInfoService
             using var searcher = new ManagementObjectSearcher(
                 "SELECT Name FROM Win32_Service WHERE Name='AteraAgent' OR Name='AteraAgentService'");
             using var results = searcher.Get();
-            if (results.Count > 0)
+            foreach (ManagementObject _ in results)
             {
                 return true;
             }
         }
         catch
         {
-            // Ignore WMI failures.
+            return false;
         }
 
         return false;
@@ -161,8 +149,7 @@ internal static class SystemInfoService
         using var searcher = new ManagementObjectSearcher("SELECT PartOfDomain, Domain FROM Win32_ComputerSystem");
         foreach (ManagementObject item in searcher.Get())
         {
-            var partOfDomain = item["PartOfDomain"] is true;
-            if (partOfDomain && item["Domain"] is string domain && !string.IsNullOrWhiteSpace(domain))
+            if (item["PartOfDomain"] is true && item["Domain"] is string domain && !string.IsNullOrWhiteSpace(domain))
             {
                 return domain.Trim();
             }
@@ -187,63 +174,49 @@ internal static class SystemInfoService
         return Environment.OSVersion.VersionString;
     }
 
-    private static IReadOnlyList<NetworkInterface> GetPreferredNetworkInterfaces()
-    {
-        return NetworkInterface.GetAllNetworkInterfaces()
+    private static IReadOnlyList<NetworkInterface> GetPreferredNetworkInterfaces() =>
+        NetworkInterface.GetAllNetworkInterfaces()
             .Where(IsUsableNetworkInterface)
             .OrderBy(GetAdapterPriority)
             .ThenByDescending(ni => ni.Speed)
             .ToList();
-    }
 
     private static bool IsUsableNetworkInterface(NetworkInterface ni)
     {
-        if (ni.OperationalStatus != OperationalStatus.Up)
-        {
-            return false;
-        }
-
-        if (ni.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
+        if (ni.OperationalStatus != OperationalStatus.Up ||
+            ni.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
         {
             return false;
         }
 
         var description = ni.Description.ToLowerInvariant();
         var name = ni.Name.ToLowerInvariant();
-
-        foreach (var keyword in VirtualAdapterKeywords)
+        if (VirtualAdapterKeywords.Any(keyword =>
+                description.Contains(keyword, StringComparison.Ordinal) ||
+                name.Contains(keyword, StringComparison.Ordinal)))
         {
-            if (description.Contains(keyword, StringComparison.Ordinal) ||
-                name.Contains(keyword, StringComparison.Ordinal))
-            {
-                return false;
-            }
+            return false;
         }
 
         return ni.GetIPProperties().UnicastAddresses
-            .Any(a => a.Address.AddressFamily == AddressFamily.InterNetwork &&
+            .Any(a => IsIpv4Address(a.Address) &&
                       !IsApipa(a.Address.ToString()));
     }
 
-    private static int GetAdapterPriority(NetworkInterface ni)
+    private static int GetAdapterPriority(NetworkInterface ni) => ni.NetworkInterfaceType switch
     {
-        return ni.NetworkInterfaceType switch
-        {
-            NetworkInterfaceType.Ethernet => 0,
-            NetworkInterfaceType.GigabitEthernet => 0,
-            NetworkInterfaceType.Wireless80211 => 1,
-            NetworkInterfaceType.FastEthernetT => 2,
-            NetworkInterfaceType.FastEthernetFx => 2,
-            _ => 3
-        };
-    }
+        NetworkInterfaceType.Ethernet or NetworkInterfaceType.GigabitEthernet => 0,
+        NetworkInterfaceType.Wireless80211 => 1,
+        NetworkInterfaceType.FastEthernetT or NetworkInterfaceType.FastEthernetFx => 2,
+        _ => 3
+    };
 
     private static string GetActiveIpAddress()
     {
         foreach (var ni in GetPreferredNetworkInterfaces())
         {
             var address = ni.GetIPProperties().UnicastAddresses
-                .Where(a => a.Address.AddressFamily == AddressFamily.InterNetwork)
+                .Where(a => IsIpv4Address(a.Address))
                 .Select(a => a.Address.ToString())
                 .FirstOrDefault(ip => !IsApipa(ip));
 
@@ -261,7 +234,7 @@ internal static class SystemInfoService
         foreach (var ni in GetPreferredNetworkInterfaces())
         {
             var servers = ni.GetIPProperties().DnsAddresses
-                .Where(a => a.AddressFamily == AddressFamily.InterNetwork)
+                .Where(IsIpv4Address)
                 .Select(a => a.ToString())
                 .Distinct()
                 .ToList();
@@ -277,6 +250,9 @@ internal static class SystemInfoService
 
     private static bool IsApipa(string ip) => ip.StartsWith("169.254.", StringComparison.Ordinal);
 
+    private static bool IsIpv4Address(IPAddress address) =>
+        address.AddressFamily == AddressFamily.InterNetwork;
+
     private static string GetUptime(AppLanguage language)
     {
         using var searcher = new ManagementObjectSearcher("SELECT LastBootUpTime FROM Win32_OperatingSystem");
@@ -285,13 +261,11 @@ internal static class SystemInfoService
             if (item["LastBootUpTime"] is not null)
             {
                 var bootTime = ManagementDateTimeConverter.ToDateTime(item["LastBootUpTime"].ToString()!);
-                var uptime = DateTime.Now - bootTime;
-                return FormatUptime(uptime, language);
+                return FormatUptime(DateTime.Now - bootTime, language);
             }
         }
 
-        var tickUptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
-        return FormatUptime(tickUptime, language);
+        return FormatUptime(TimeSpan.FromMilliseconds(Environment.TickCount64), language);
     }
 
     private static string FormatUptime(TimeSpan uptime, AppLanguage language)
@@ -302,29 +276,13 @@ internal static class SystemInfoService
 
         if (language == AppLanguage.Polish)
         {
-            if (days > 0)
-            {
-                return $"{days} dni {hours} godzin";
-            }
-
-            if (hours > 0)
-            {
-                return $"{hours} godz. {minutes} min.";
-            }
-
+            if (days > 0) return $"{days} dni {hours} godzin";
+            if (hours > 0) return $"{hours} godz. {minutes} min.";
             return $"{minutes} min.";
         }
 
-        if (days > 0)
-        {
-            return $"{days} days {hours} hours";
-        }
-
-        if (hours > 0)
-        {
-            return $"{hours} hours {minutes} minutes";
-        }
-
+        if (days > 0) return $"{days} days {hours} hours";
+        if (hours > 0) return $"{hours} hours {minutes} minutes";
         return $"{minutes} minutes";
     }
 
@@ -335,7 +293,6 @@ internal static class SystemInfoService
         {
             var manufacturer = item["Manufacturer"]?.ToString()?.Trim() ?? string.Empty;
             var model = item["Model"]?.ToString()?.Trim() ?? string.Empty;
-
             if (!string.IsNullOrEmpty(manufacturer) && !string.IsNullOrEmpty(model))
             {
                 return $"{manufacturer} {model}";
@@ -362,13 +319,9 @@ internal static class SystemInfoService
     {
         var domain = Environment.UserDomainName;
         var user = Environment.UserName;
-
-        if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(user))
-        {
-            return string.Empty;
-        }
-
-        return $@"{domain}\{user}";
+        return string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(user)
+            ? string.Empty
+            : $@"{domain}\{user}";
     }
 
     private static string GetUserDisplayName()
@@ -379,16 +332,7 @@ internal static class SystemInfoService
             return displayName;
         }
 
-        if (OperatingSystem.IsWindows())
-        {
-            displayName = GetUserDisplayNameFromIdentity();
-            if (!string.IsNullOrWhiteSpace(displayName))
-            {
-                return displayName;
-            }
-        }
-
-        return string.Empty;
+        return OperatingSystem.IsWindows() ? GetUserDisplayNameFromIdentity() : string.Empty;
     }
 
     private static string GetUserDisplayNameFromWmi()
@@ -414,25 +358,21 @@ internal static class SystemInfoService
         try
         {
             using var identity = WindowsIdentity.GetCurrent();
-            var name = identity.Name;
-            if (string.IsNullOrWhiteSpace(name))
+            var parts = identity.Name?.Split('\\');
+            if (parts?.Length != 2)
             {
                 return string.Empty;
             }
 
-            var parts = name.Split('\\');
-            if (parts.Length == 2)
-            {
-                using var searcher = new ManagementObjectSearcher(
-                    $"SELECT FullName FROM Win32_UserAccount WHERE Name='{parts[1].Replace("'", "''")}'");
+            using var searcher = new ManagementObjectSearcher(
+                $"SELECT FullName FROM Win32_UserAccount WHERE Name='{parts[1].Replace("'", "''")}'");
 
-                foreach (ManagementObject item in searcher.Get())
+            foreach (ManagementObject item in searcher.Get())
+            {
+                var fullName = item["FullName"]?.ToString()?.Trim();
+                if (!string.IsNullOrWhiteSpace(fullName))
                 {
-                    var fullName = item["FullName"]?.ToString()?.Trim();
-                    if (!string.IsNullOrWhiteSpace(fullName))
-                    {
-                        return fullName;
-                    }
+                    return fullName;
                 }
             }
         }
@@ -446,10 +386,7 @@ internal static class SystemInfoService
 
     private static bool IsVirtualMachine()
     {
-        var manufacturer = string.Empty;
-        var model = string.Empty;
-        var biosManufacturer = string.Empty;
-        var biosVersion = string.Empty;
+        var combined = string.Empty;
         var hypervisorPresent = false;
 
         try
@@ -458,8 +395,7 @@ internal static class SystemInfoService
                 "SELECT Manufacturer, Model, HypervisorPresent FROM Win32_ComputerSystem");
             foreach (ManagementObject item in systemSearcher.Get())
             {
-                manufacturer = item["Manufacturer"]?.ToString() ?? string.Empty;
-                model = item["Model"]?.ToString() ?? string.Empty;
+                combined += $"{item["Manufacturer"]} {item["Model"]} ";
                 hypervisorPresent = item["HypervisorPresent"] is true;
             }
         }
@@ -473,8 +409,7 @@ internal static class SystemInfoService
             using var biosSearcher = new ManagementObjectSearcher("SELECT Manufacturer, SMBIOSBIOSVersion FROM Win32_BIOS");
             foreach (ManagementObject item in biosSearcher.Get())
             {
-                biosManufacturer = item["Manufacturer"]?.ToString() ?? string.Empty;
-                biosVersion = item["SMBIOSBIOSVersion"]?.ToString() ?? string.Empty;
+                combined += $"{item["Manufacturer"]} {item["SMBIOSBIOSVersion"]} ";
             }
         }
         catch
@@ -482,8 +417,7 @@ internal static class SystemInfoService
             // Ignore WMI failures.
         }
 
-        var combined = $"{manufacturer} {model} {biosManufacturer} {biosVersion}".ToLowerInvariant();
-
+        combined = combined.ToLowerInvariant();
         if (hypervisorPresent)
         {
             return true;
@@ -529,15 +463,8 @@ internal static class SystemInfoService
             {
                 if (item["PCSystemType"] is ushort systemType)
                 {
-                    if (systemType == 1)
-                    {
-                        return "Laptop";
-                    }
-
-                    if (systemType == 2)
-                    {
-                        return language == AppLanguage.Polish ? "Komputer stacjonarny" : "Desktop";
-                    }
+                    if (systemType == 1) return "Laptop";
+                    if (systemType == 2) return language == AppLanguage.Polish ? "Komputer stacjonarny" : "Desktop";
                 }
             }
         }

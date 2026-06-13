@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
-namespace DaneKomputera.Services;
+namespace PCInform.Services;
 
 internal static class OutlookMailService
 {

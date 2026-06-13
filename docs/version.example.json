@@ -1,0 +1,8 @@
+{
+  "version": "1.0.1",
+  "downloadUrl": "https://example.com/pcinform/latest/PCInform-Setup.exe",
+  "sha256": "PUT_SHA256_HASH_HERE",
+  "mandatory": false,
+  "releaseNotesPl": "Poprawki i usprawnienia.",
+  "releaseNotesEn": "Fixes and improvements."
+}
