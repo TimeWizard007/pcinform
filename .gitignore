@@ -31,3 +31,10 @@ appsettings.json
 
 # Logs
 *.log
+
+# Audit files
+audit_*.txt
+
+# Temporary files
+*.tmp
+*.bak
