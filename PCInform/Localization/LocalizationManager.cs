@@ -60,23 +60,23 @@ internal static class LocalizationManager
         : "Computer name:";
 
     public static string DomainLabel => CurrentLanguage == AppLanguage.Polish
-        ? "Domena Active Directory:"
+        ? "Domena:"
         : "Active Directory domain:";
 
     public static string OperatingSystemLabel => CurrentLanguage == AppLanguage.Polish
-        ? "System operacyjny:"
+        ? "System:"
         : "Operating system:";
 
     public static string IpAddressLabel => CurrentLanguage == AppLanguage.Polish ? "Adres IP:" : "IP address:";
-    public static string DnsLabel => CurrentLanguage == AppLanguage.Polish ? "Serwery DNS:" : "DNS servers:";
-    public static string UptimeLabel => CurrentLanguage == AppLanguage.Polish ? "Czas pracy systemu:" : "Uptime:";
+    public static string DnsLabel => CurrentLanguage == AppLanguage.Polish ? "DNS:" : "DNS servers:";
+    public static string UptimeLabel => CurrentLanguage == AppLanguage.Polish ? "Czas pracy:" : "Uptime:";
 
     public static string ManufacturerLabel => CurrentLanguage == AppLanguage.Polish
-        ? "Producent i model:"
+        ? "Producent/model:"
         : "Manufacturer and model:";
 
     public static string BiosSerialLabel => CurrentLanguage == AppLanguage.Polish
-        ? "Numer seryjny BIOS:"
+        ? "Numer seryjny:"
         : "BIOS serial number:";
 
     public static string MachineTypeLabel => CurrentLanguage == AppLanguage.Polish
@@ -144,4 +144,22 @@ internal static class LocalizationManager
         CurrentLanguage == AppLanguage.Polish
             ? $"Dostępna jest nowa wersja {version}.\n\n{releaseNotes}\n\nCzy chcesz pobrać aktualizację?"
             : $"A new version {version} is available.\n\n{releaseNotes}\n\nDo you want to download the update?";
+
+    public static string AboutLink => CurrentLanguage == AppLanguage.Polish ? "O aplikacji" : "About";
+
+    public static string AboutDialogTitle => AboutLink;
+
+    public static string AboutDescription => CurrentLanguage == AppLanguage.Polish
+        ? "Lekkie narzędzie do wyświetlania podstawowych informacji o komputerze i przygotowania zgłoszenia do Service Desk."
+        : "A lightweight tool for displaying basic computer information and preparing a Service Desk support request.";
+
+    public static string AboutVersionLabel => CurrentLanguage == AppLanguage.Polish ? "Wersja:" : "Version:";
+
+    public static string AboutAuthorLabel => CurrentLanguage == AppLanguage.Polish ? "Autor:" : "Author:";
+
+    public static string AboutGitHubLabel => "GitHub:";
+
+    public const string AboutAuthorName = "Michał Watkowski";
+
+    public const string AboutGitHubUrl = "https://github.com/TimeWizard007/pcinform";
 }

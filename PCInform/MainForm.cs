@@ -65,6 +65,7 @@ internal sealed class MainForm : Form
     private LinkLabel _englishLink = null!;
     private Label _languageSeparator = null!;
     private Label _footerLabel = null!;
+    private LinkLabel _aboutLink = null!;
 
     private Button _copyButton = null!;
     private Button _refreshButton = null!;
@@ -182,14 +183,36 @@ internal sealed class MainForm : Form
 
         _footerLabel = new Label
         {
-            Dock = DockStyle.Bottom,
-            Height = 22,
+            Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleCenter,
             BackColor = AppTheme.FooterBackground,
             ForeColor = AppTheme.FooterText,
             Font = _footerFont,
             Text = AppInfoService.FooterText
         };
+
+        _aboutLink = new LinkLabel
+        {
+            Text = LocalizationManager.AboutLink,
+            AutoSize = true,
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
+            Location = new Point(548, 4),
+            LinkColor = AppTheme.BannerBlue,
+            ActiveLinkColor = AppTheme.Accent,
+            VisitedLinkColor = AppTheme.BannerBlue,
+            Font = _footerFont,
+            Cursor = Cursors.Hand
+        };
+        _aboutLink.Click += (_, _) => ShowAboutDialog();
+
+        var footerPanel = new Panel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 22,
+            BackColor = AppTheme.FooterBackground
+        };
+        footerPanel.Controls.Add(_footerLabel);
+        footerPanel.Controls.Add(_aboutLink);
 
         var buttonPanel = new Panel
         {
@@ -355,8 +378,14 @@ internal sealed class MainForm : Form
 
         Controls.Add(_contentPanel);
         Controls.Add(buttonPanel);
-        Controls.Add(_footerLabel);
+        Controls.Add(footerPanel);
         Controls.Add(bannerPanel);
+    }
+
+    private void ShowAboutDialog()
+    {
+        using var about = new AboutForm(this);
+        about.ShowDialog(this);
     }
 
     private LinkLabel CreateLanguageLink(string text, int x) => new()
@@ -408,15 +437,18 @@ internal sealed class MainForm : Form
 
     private (Label[] Captions, TextBox[] Values) CreateFieldTable(Panel parent, int rowCount)
     {
+        const float labelColumnWidth = 200F;
+
         var table = new TableLayoutPanel
         {
             Location = new Point(0, 0),
-            Size = new Size(568, rowCount * 26),
+            Dock = DockStyle.Top,
             ColumnCount = 2,
             RowCount = rowCount,
-            AutoSize = true
+            AutoSize = true,
+            Width = parent.ClientSize.Width - parent.Padding.Horizontal
         };
-        table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F));
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, labelColumnWidth));
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
         var captions = new Label[rowCount];
@@ -427,11 +459,12 @@ internal sealed class MainForm : Form
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             captions[i] = new Label
             {
-                AutoSize = true,
+                AutoSize = false,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
                 Margin = new Padding(0, 4, 8, 4),
                 Font = _labelFont,
-                ForeColor = AppTheme.LabelText,
-                Anchor = AnchorStyles.Left
+                ForeColor = AppTheme.LabelText
             };
             values[i] = new TextBox
             {
@@ -442,7 +475,9 @@ internal sealed class MainForm : Form
                 Font = _valueFont,
                 Margin = new Padding(0, 4, 0, 4),
                 Dock = DockStyle.Fill,
-                TabStop = false
+                TabStop = false,
+                Multiline = true,
+                WordWrap = false
             };
             table.Controls.Add(captions[i], 0, i);
             table.Controls.Add(values[i], 1, i);
@@ -662,6 +697,7 @@ internal sealed class MainForm : Form
         Text = LocalizationManager.WindowTitle;
         _bannerLabel.Text = LocalizationManager.BannerTitle;
         _footerLabel.Text = AppInfoService.FooterText;
+        _aboutLink.Text = LocalizationManager.AboutLink;
 
         if (_contactSectionLabel is not null)
         {

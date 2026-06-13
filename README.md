@@ -6,15 +6,17 @@
 
 - **Computer information:** name, AD domain, OS, IPv4, DNS, uptime, manufacturer/model, BIOS serial, device type
 - **User information:** login (`DOMAIN\username`) and display name
-- **Optional agents:** TeamViewer status/launch, Atera detection (reports only by default)
+- **Optional agents:** TeamViewer status/launch, optional Atera detection (disabled in public defaults)
 - **Support workflow:** copy formatted report to clipboard, open prefilled support email
 - **Email integration:** Outlook Classic COM draft (when a MAPI profile exists) with `mailto:` fallback
 - **Localization:** Polish and English UI
 - **Configuration:** fully customizable via `appsettings.json`
-- **Updates:** optional remote version check (user confirms download in browser)
+- **Updates:** optional remote version check (configured by administrators)
 - **No admin required:** runs with standard user permissions
 
 ## Configuration
+
+`appsettings.json` controls branding, support contact details, feature toggles, and update behavior.
 
 On first run, PC Inform creates a default configuration at:
 
@@ -31,7 +33,7 @@ See [appsettings.example.json](appsettings.example.json) for all available optio
 | `application` | App name, window title, banner text, default language, accent color |
 | `support` | Company name, email, phone, email subject prefixes |
 | `features` | TeamViewer, Atera, update check toggles |
-| `update` | Remote `version.json` URL |
+| `update` | Remote `version.json` URL and enable flag |
 
 User language preference is stored separately at:
 
@@ -39,15 +41,22 @@ User language preference is stored separately at:
 %APPDATA%\PCInform\settings.json
 ```
 
+### Administrator vs end user
+
+- **Administrators / deployment:** customize `appsettings.json` for your organization (support email, banner, accent color, optional update URL).
+- **Update settings** (`features.checkUpdates`, `update.enabled`, `update.versionUrl`) are intended for **administrator or deployment configuration**, not casual end-user changes.
+- **End users** normally edit only language (in-app) and use the app — they should not need to change update configuration.
+
+Public defaults disable Atera detection and automatic update checks. Enable them in your deployed `appsettings.json` when needed.
+
 ## Installation
 
 ### End users (installer)
 
-1. Download `PCInform-Setup.exe` from your release page.
+1. Download `PCInform-Setup.exe` from [GitHub Releases](https://github.com/TimeWizard007/pcinform/releases).
 2. Run the installer — **no administrator rights required**.
 3. The app installs to `%LOCALAPPDATA%\PCInform\`.
 4. Optionally create a desktop shortcut during setup.
-5. Edit `%LOCALAPPDATA%\PCInform\appsettings.json` to match your organization.
 
 Existing `appsettings.json` files are preserved during upgrades.
 
@@ -57,20 +66,9 @@ Copy `PCInform.exe` (and optionally `appsettings.json`) to any folder and run di
 
 ## Update mechanism
 
-When enabled in configuration, PC Inform checks a remote `version.json` on startup.
+When enabled in **administrator-provided** `appsettings.json`, PC Inform checks a remote `version.json` on startup.
 
-Example format — see [docs/version.example.json](docs/version.example.json):
-
-```json
-{
-  "version": "1.0.1",
-  "downloadUrl": "https://example.com/pcinform/latest/PCInform-Setup.exe",
-  "sha256": "PUT_SHA256_HASH_HERE",
-  "mandatory": false,
-  "releaseNotesPl": "Poprawki i usprawnienia.",
-  "releaseNotesEn": "Fixes and improvements."
-}
-```
+Example format — see [docs/version.example.json](docs/version.example.json).
 
 Behavior:
 
@@ -80,11 +78,13 @@ Behavior:
 - Does **not** silently install updates
 - Failures do **not** block application startup
 
+See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for the full release and `version.json` workflow.
+
 ## Build from source
 
 ### Requirements
 
-- Windows 10 or 11
+- Windows 10 or 11 (or Linux with .NET SDK for cross-publish)
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 ### Debug run
@@ -116,17 +116,14 @@ Replace `PCInform\icon.ico` with your own icon before publishing.
 
 ## Release process
 
-1. Update `Version` in `PCInform/PCInform.csproj`.
-2. Update `CHANGELOG.md`.
-3. Publish the Release build (command above).
-4. Build the installer with [Inno Setup 6](https://jrsoftware.org/isinfo.php):
+See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
 
-   ```powershell
-   iscc installer\PCInform.iss
-   ```
+Summary:
 
-5. Upload `PCInform-Setup.exe` to your release host.
-6. Publish an updated `version.json` pointing to the new installer.
+1. Update version in `PCInform/PCInform.csproj` and `CHANGELOG.md`.
+2. Publish and build `PCInform-Setup.exe` with Inno Setup.
+3. Create a GitHub Release and attach the installer (do **not** commit binaries to the source tree).
+4. Publish `version.json` for deployments that enable update checks.
 
 ## Project structure
 
@@ -134,7 +131,9 @@ Replace `PCInform\icon.ico` with your own icon before publishing.
 pcinform/
 ├── PCInform/              # Application source
 ├── appsettings.example.json
-├── docs/version.example.json
+├── docs/
+│   ├── version.example.json
+│   └── RELEASE_PROCESS.md
 ├── installer/PCInform.iss
 ├── LICENSE
 └── CHANGELOG.md

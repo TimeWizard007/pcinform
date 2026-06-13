@@ -119,15 +119,15 @@ internal static class ConfigurationService
         {
             ShowTeamViewer = true,
             AllowLaunchTeamViewer = true,
-            DetectAtera = true,
+            DetectAtera = false,
             ShowAteraInGui = false,
-            IncludeAteraInReports = true,
-            CheckUpdates = true
+            IncludeAteraInReports = false,
+            CheckUpdates = false
         },
         Update = new UpdateSettings
         {
-            Enabled = true,
-            VersionUrl = "https://example.com/pcinform/latest/version.json"
+            Enabled = false,
+            VersionUrl = string.Empty
         }
     };
 }
