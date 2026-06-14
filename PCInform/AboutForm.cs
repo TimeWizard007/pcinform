@@ -9,6 +9,7 @@ internal sealed class AboutForm : Form
 {
     private readonly Label _descriptionLabel;
     private readonly Label _versionLabel;
+    private readonly Label _projectCaptionLabel;
     private readonly LinkLabel _githubLink;
 
     public AboutForm(IWin32Window? owner)
@@ -18,7 +19,7 @@ internal sealed class AboutForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(600, 360);
+        ClientSize = new Size(600, 380);
         BackColor = AppTheme.Background;
         Font = new Font("Segoe UI", 9F);
         ShowInTaskbar = false;
@@ -56,7 +57,7 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutDescription,
             Location = new Point(left, 88),
-            Size = new Size(contentWidth, 56),
+            Size = new Size(contentWidth, 72),
             ForeColor = AppTheme.LabelText,
             TextAlign = ContentAlignment.TopLeft
         };
@@ -65,7 +66,7 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutAuthorLabel,
             AutoSize = false,
-            Location = new Point(left, 160),
+            Location = new Point(left, 172),
             Size = new Size(56, 22),
             ForeColor = AppTheme.LabelText,
             TextAlign = ContentAlignment.MiddleLeft
@@ -75,17 +76,17 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutAuthorName,
             AutoSize = false,
-            Location = new Point(left + 56, 160),
+            Location = new Point(left + 56, 172),
             Size = new Size(contentWidth - 56, 22),
             ForeColor = AppTheme.ValueText,
             TextAlign = ContentAlignment.MiddleLeft
         };
 
-        var githubCaption = new Label
+        _projectCaptionLabel = new Label
         {
             Text = LocalizationManager.AboutGitHubLabel,
             AutoSize = false,
-            Location = new Point(left, 192),
+            Location = new Point(left, 204),
             Size = new Size(56, 22),
             ForeColor = AppTheme.LabelText,
             TextAlign = ContentAlignment.MiddleLeft
@@ -95,7 +96,7 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutGitHubUrl,
             AutoSize = false,
-            Location = new Point(left + 56, 192),
+            Location = new Point(left + 56, 204),
             Size = new Size(contentWidth - 56, 22),
             LinkColor = AppTheme.BannerBlue,
             ActiveLinkColor = AppTheme.Accent,
@@ -110,7 +111,7 @@ internal sealed class AboutForm : Form
             Text = LocalizationManager.CloseButton,
             DialogResult = DialogResult.OK,
             Size = new Size(90, 32),
-            Location = new Point(478, 304),
+            Location = new Point(478, 324),
             FlatStyle = FlatStyle.Flat,
             BackColor = AppTheme.BannerBlue,
             ForeColor = Color.White
@@ -124,7 +125,7 @@ internal sealed class AboutForm : Form
         Controls.Add(_descriptionLabel);
         Controls.Add(authorCaption);
         Controls.Add(authorValue);
-        Controls.Add(githubCaption);
+        Controls.Add(_projectCaptionLabel);
         Controls.Add(_githubLink);
         Controls.Add(closeButton);
     }
@@ -134,6 +135,7 @@ internal sealed class AboutForm : Form
         Text = LocalizationManager.AboutDialogTitle;
         _versionLabel.Text = $"{LocalizationManager.AboutVersionLabel} v{AppInfoService.Version}";
         _descriptionLabel.Text = LocalizationManager.AboutDescription;
+        _projectCaptionLabel.Text = LocalizationManager.AboutGitHubLabel;
         _githubLink.Text = LocalizationManager.AboutGitHubUrl;
     }
 

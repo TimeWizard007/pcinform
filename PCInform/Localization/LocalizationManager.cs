@@ -196,14 +196,15 @@ internal static class LocalizationManager
     public static string AboutDialogTitle => AboutLink;
 
     public static string AboutDescription => CurrentLanguage == AppLanguage.Polish
-        ? "Informacje o komputerze i zgłoszenie do Service Desk."
-        : "Computer information and Service Desk support request.";
+        ? "PC Inform umożliwia szybki podgląd informacji o komputerze oraz przygotowanie danych potrzebnych do zgłoszenia serwisowego."
+        : "PC Inform provides quick access to computer information and support request details.";
 
     public static string AboutVersionLabel => CurrentLanguage == AppLanguage.Polish ? "Wersja:" : "Version:";
 
     public static string AboutAuthorLabel => CurrentLanguage == AppLanguage.Polish ? "Autor:" : "Author:";
 
-    public static string AboutGitHubLabel => "GitHub:";
+    public static string AboutGitHubLabel =>
+        CurrentLanguage == AppLanguage.Polish ? "Projekt:" : "Project:";
 
     public const string AboutAuthorName = "Michał Watkowski";
 
