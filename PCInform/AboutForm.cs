@@ -18,7 +18,7 @@ internal sealed class AboutForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(448, 276);
+        ClientSize = new Size(520, 300);
         BackColor = AppTheme.Background;
         Font = new Font("Segoe UI", 9F);
         ShowInTaskbar = false;
@@ -28,33 +28,31 @@ internal sealed class AboutForm : Form
             Icon = ownerForm.Icon;
         }
 
-        const int contentWidth = 408;
-        const int leftMargin = 20;
-        const int valueColumn = 72;
+        const int left = 24;
+        const int contentWidth = 472;
 
         var titleLabel = new Label
         {
             Text = "PC Inform",
-            Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 14F, FontStyle.Bold),
             ForeColor = AppTheme.BannerBlue,
             AutoSize = true,
-            Location = new Point(leftMargin, 16)
+            Location = new Point(left, 20)
         };
 
         _versionLabel = new Label
         {
             Text = $"{LocalizationManager.AboutVersionLabel} v{AppInfoService.Version}",
             AutoSize = true,
-            Location = new Point(leftMargin, 44),
+            Location = new Point(left, 52),
             ForeColor = AppTheme.ValueText
         };
 
         _descriptionLabel = new Label
         {
             Text = LocalizationManager.AboutDescription,
-            AutoSize = true,
-            MaximumSize = new Size(contentWidth, 0),
-            Location = new Point(leftMargin, 68),
+            Location = new Point(left, 84),
+            Size = new Size(contentWidth, 56),
             ForeColor = AppTheme.LabelText
         };
 
@@ -62,7 +60,7 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutAuthorLabel,
             AutoSize = true,
-            Location = new Point(leftMargin, 140),
+            Location = new Point(left, 152),
             ForeColor = AppTheme.LabelText
         };
 
@@ -70,7 +68,7 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutAuthorName,
             AutoSize = true,
-            Location = new Point(valueColumn, 140),
+            Location = new Point(left + 56, 152),
             ForeColor = AppTheme.ValueText
         };
 
@@ -78,7 +76,7 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutGitHubLabel,
             AutoSize = true,
-            Location = new Point(leftMargin, 164),
+            Location = new Point(left, 180),
             ForeColor = AppTheme.LabelText
         };
 
@@ -86,8 +84,7 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutGitHubUrl,
             AutoSize = true,
-            MaximumSize = new Size(contentWidth - valueColumn + leftMargin, 0),
-            Location = new Point(valueColumn, 164),
+            Location = new Point(left, 202),
             LinkColor = AppTheme.BannerBlue,
             ActiveLinkColor = AppTheme.Accent,
             VisitedLinkColor = AppTheme.BannerBlue,
@@ -99,8 +96,8 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.CloseButton,
             DialogResult = DialogResult.OK,
-            Size = new Size(90, 28),
-            Location = new Point(338, 232),
+            Size = new Size(90, 30),
+            Location = new Point(406, 252),
             FlatStyle = FlatStyle.Flat,
             BackColor = AppTheme.BannerBlue,
             ForeColor = Color.White

@@ -208,4 +208,9 @@ internal static class LocalizationManager
     public const string AboutAuthorName = "Michał Watkowski";
 
     public const string AboutGitHubUrl = "https://github.com/TimeWizard007/pcinform";
+
+    public const string ConfigurationDocUrl = "https://github.com/TimeWizard007/pcinform#configuration";
+
+    public static string ConfigurationLink =>
+        CurrentLanguage == AppLanguage.Polish ? "Konfiguracja" : "Configuration";
 }

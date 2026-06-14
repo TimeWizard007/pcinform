@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Principal;
-using PCInform.Configuration;
 using PCInform.Localization;
 using PCInform.Models;
 
@@ -40,14 +39,12 @@ internal static class SystemInfoService
 
     public static SystemInfoData Collect(AppLanguage language)
     {
-        var features = ConfigurationService.Current.Features;
         var noData = language == AppLanguage.Polish ? "brak danych" : "no data";
         var outsideAd = language == AppLanguage.Polish
             ? "poza Active Directory"
             : "outside Active Directory";
 
-        var collectTeamViewer = features.ShowTeamViewer || features.ShowTeamViewerSection;
-        var teamViewerPath = collectTeamViewer ? FindTeamViewerPath() : null;
+        var teamViewerPath = FindTeamViewerPath();
 
         return new SystemInfoData
         {
@@ -64,7 +61,7 @@ internal static class SystemInfoService
             UserDisplayName = SafeGet(GetUserDisplayName, noData),
             TeamViewerInstalled = teamViewerPath is not null,
             TeamViewerPath = teamViewerPath,
-            AteraInstalled = features.DetectAtera && IsAteraInstalled()
+            AteraInstalled = IsAteraInstalled()
         };
     }
 

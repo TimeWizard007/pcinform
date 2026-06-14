@@ -35,11 +35,11 @@ Polish and English UI are supported. Branding, contact details, visible fields, 
 
 You can run **PCInform.exe** directly. Configuration still comes from the global file below (create it manually or let PC Inform create safe defaults on first run).
 
-## Configuration
+## Configuration {#configuration}
 
 PC Inform is configured through **one machine-wide** `appsettings.json` file shared by all users on the computer.
 
-### Global configuration location
+### Where configuration is stored
 
 ```
 C:\ProgramData\PCInform\appsettings.json
@@ -47,22 +47,26 @@ C:\ProgramData\PCInform\appsettings.json
 
 Environment variable form: `%PROGRAMDATA%\PCInform\appsettings.json`
 
-PC Inform does **not** use:
-
-- `%LOCALAPPDATA%\PCInform\appsettings.json`
-- `appsettings.json` next to the executable
+PC Inform does **not** use `%LOCALAPPDATA%\PCInform\appsettings.json` or a file next to the executable.
 
 On first run, if the global file is missing, PC Inform creates the folder and a default file with safe public settings. An existing file is never modified automatically.
 
-Per-user **language preference** only is stored at:
-
-```
-%APPDATA%\PCInform\settings.json
-```
+Per-user **language preference** only is stored at `%APPDATA%\PCInform\settings.json`.
 
 See [appsettings.example.json](appsettings.example.json) for a full example.
 
-### Application settings (`application`)
+### JSON sections overview
+
+| Section | Purpose |
+|---------|---------|
+| **Application** | App name, window title, banner text, default language, accent color, enabled languages |
+| **Support** | Company name, support email/phone/mobile/website, CC/BCC, subject prefixes, contact visibility flags |
+| **Features** | Which computer/user fields are shown, optional TeamViewer/Atera integration, update-check permission |
+| **Update** | Whether to check a remote `version.json` and which URL to use (disabled by default) |
+
+Visibility flags in **Support** and **Features** control what appears in the UI and in copied/emailed reports. They do **not** stop the application from collecting system information internally.
+
+### Application (`application`)
 
 | Setting | Purpose |
 |---------|---------|
@@ -71,7 +75,7 @@ See [appsettings.example.json](appsettings.example.json) for a full example.
 | `accentColor` | Accent color (hex, e.g. `#E87722`) |
 | `enablePolish`, `enableEnglish` | Which languages are available; if only one is enabled, the language switcher is hidden |
 
-### Contact configuration (`support`)
+### Support (`support`)
 
 | Setting | Purpose |
 |---------|---------|
@@ -100,7 +104,7 @@ Website URL is set under `support.websiteUrl`. Display is controlled by `support
 
 `application.websiteUrl` is available for future or custom use; the contact section uses `support.websiteUrl`.
 
-### Feature flags (`features`)
+### Features (`features`)
 
 Organizations can show a **minimal** UI (banner + contact + Report problem) or a **full diagnostic** view by editing `appsettings.json` — no recompile required.
 
@@ -123,7 +127,7 @@ Disabled fields are omitted from the UI, clipboard report, and support email.
 | `includeAteraInReports` | Include Atera in copied/emailed reports |
 | `checkUpdates` | Allow update check on startup |
 
-### Update configuration (`update`)
+### Update (`update`)
 
 Update checking is **disabled by default**. PC Inform does not install updates automatically.
 

@@ -56,6 +56,7 @@ internal sealed class MainForm : Form
     private LinkLabel? _englishLink;
     private Label? _languageSeparator;
     private Label _footerLabel = null!;
+    private LinkLabel _configLink = null!;
     private LinkLabel _aboutLink = null!;
 
     private Button _copyButton = null!;
@@ -193,10 +194,44 @@ internal sealed class MainForm : Form
             VisitedLinkColor = AppTheme.BannerBlue,
             Font = _footerFont,
             Cursor = Cursors.Hand,
-            TextAlign = ContentAlignment.MiddleRight,
-            Padding = new Padding(0, 0, 12, 0)
+            Margin = new Padding(0, 0, 0, 0)
         };
         _aboutLink.Click += (_, _) => ShowAboutDialog();
+
+        _configLink = new LinkLabel
+        {
+            Text = LocalizationManager.ConfigurationLink,
+            AutoSize = true,
+            LinkColor = AppTheme.BannerBlue,
+            ActiveLinkColor = AppTheme.Accent,
+            VisitedLinkColor = AppTheme.BannerBlue,
+            Font = _footerFont,
+            Cursor = Cursors.Hand,
+            Margin = new Padding(0, 0, 6, 0)
+        };
+        _configLink.LinkClicked += (_, _) => OpenConfigurationDoc();
+
+        var footerSeparator = new Label
+        {
+            Text = "|",
+            AutoSize = true,
+            ForeColor = AppTheme.FooterText,
+            Font = _footerFont,
+            Margin = new Padding(0, 0, 6, 0)
+        };
+
+        var footerLinksPanel = new FlowLayoutPanel
+        {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = AppTheme.FooterBackground,
+            Margin = new Padding(0, 2, 12, 0)
+        };
+        footerLinksPanel.Controls.Add(_configLink);
+        footerLinksPanel.Controls.Add(footerSeparator);
+        footerLinksPanel.Controls.Add(_aboutLink);
 
         var footerPanel = new TableLayoutPanel
         {
@@ -209,7 +244,7 @@ internal sealed class MainForm : Form
         footerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         footerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         footerPanel.Controls.Add(_footerLabel, 0, 0);
-        footerPanel.Controls.Add(_aboutLink, 1, 0);
+        footerPanel.Controls.Add(footerLinksPanel, 1, 0);
 
         var buttonPanel = new Panel
         {
@@ -432,12 +467,13 @@ internal sealed class MainForm : Form
         for (var i = 0; i < definitions.Count; i++)
         {
             var definition = definitions[i];
+            var valueBox = table.Values[i];
             _computerFields.Add(new BoundField
             {
                 Caption = table.Captions[i],
-                Value = table.Values[i],
+                Value = valueBox,
                 GetLabel = definition.Label,
-                ApplyValue = data => definition.Apply(data, table.Values[i])
+                ApplyValue = data => definition.Apply(data, valueBox)
             });
         }
     }
@@ -468,12 +504,13 @@ internal sealed class MainForm : Form
         for (var i = 0; i < definitions.Count; i++)
         {
             var definition = definitions[i];
+            var valueBox = table.Values[i];
             _userFields.Add(new BoundField
             {
                 Caption = table.Captions[i],
-                Value = table.Values[i],
+                Value = valueBox,
                 GetLabel = definition.Label,
-                ApplyValue = data => definition.Apply(data, table.Values[i])
+                ApplyValue = data => definition.Apply(data, valueBox)
             });
         }
     }
@@ -532,6 +569,8 @@ internal sealed class MainForm : Form
             // Ignore browser launch failures.
         }
     }
+
+    private static void OpenConfigurationDoc() => OpenWebsite(LocalizationManager.ConfigurationDocUrl);
 
     private LinkLabel CreateLanguageLink(string text, int x) => new()
     {
@@ -840,6 +879,7 @@ internal sealed class MainForm : Form
         Text = LocalizationManager.WindowTitle;
         _bannerLabel.Text = LocalizationManager.BannerTitle;
         _footerLabel.Text = AppInfoService.FooterText;
+        _configLink.Text = LocalizationManager.ConfigurationLink;
         _aboutLink.Text = LocalizationManager.AboutLink;
 
         if (_contactSectionLabel is not null)
