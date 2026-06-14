@@ -31,6 +31,9 @@ internal sealed class AboutForm : Form
 
         const int left = 32;
         const int contentWidth = 536;
+        const int labelColumnWidth = 80;
+        var valueLeft = left + labelColumnWidth;
+        var valueWidth = contentWidth - labelColumnWidth;
 
         var titleLabel = new Label
         {
@@ -67,7 +70,7 @@ internal sealed class AboutForm : Form
             Text = LocalizationManager.AboutAuthorLabel,
             AutoSize = false,
             Location = new Point(left, 172),
-            Size = new Size(56, 22),
+            Size = new Size(labelColumnWidth, 22),
             ForeColor = AppTheme.LabelText,
             TextAlign = ContentAlignment.MiddleLeft
         };
@@ -76,8 +79,8 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutAuthorName,
             AutoSize = false,
-            Location = new Point(left + 56, 172),
-            Size = new Size(contentWidth - 56, 22),
+            Location = new Point(valueLeft, 172),
+            Size = new Size(valueWidth, 22),
             ForeColor = AppTheme.ValueText,
             TextAlign = ContentAlignment.MiddleLeft
         };
@@ -87,7 +90,7 @@ internal sealed class AboutForm : Form
             Text = LocalizationManager.AboutGitHubLabel,
             AutoSize = false,
             Location = new Point(left, 204),
-            Size = new Size(56, 22),
+            Size = new Size(labelColumnWidth, 22),
             ForeColor = AppTheme.LabelText,
             TextAlign = ContentAlignment.MiddleLeft
         };
@@ -96,8 +99,8 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutGitHubUrl,
             AutoSize = false,
-            Location = new Point(left + 56, 204),
-            Size = new Size(contentWidth - 56, 22),
+            Location = new Point(valueLeft, 204),
+            Size = new Size(valueWidth, 22),
             LinkColor = AppTheme.BannerBlue,
             ActiveLinkColor = AppTheme.Accent,
             VisitedLinkColor = AppTheme.BannerBlue,
