@@ -196,8 +196,8 @@ internal static class LocalizationManager
     public static string AboutDialogTitle => AboutLink;
 
     public static string AboutDescription => CurrentLanguage == AppLanguage.Polish
-        ? "Proste narzędzie do wyświetlania informacji o komputerze i przygotowania zgłoszenia do Service Desk."
-        : "Simple tool for displaying computer information and preparing a Service Desk support request.";
+        ? "Informacje o komputerze i zgłoszenie do Service Desk."
+        : "Computer information and Service Desk support request.";
 
     public static string AboutVersionLabel => CurrentLanguage == AppLanguage.Polish ? "Wersja:" : "Version:";
 

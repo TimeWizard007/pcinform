@@ -68,6 +68,7 @@ internal sealed class MainForm : Form
     private const int TablePanelExtraHeight = 20;
     private const int ContactRowHeight = 32;
     private const int ContactPanelExtraHeight = 26;
+    private const int ContactValueLeft = 124;
 
     private TextBox[] _dataValueBoxes = [];
 
@@ -343,7 +344,7 @@ internal sealed class MainForm : Form
             {
                 Text = support.EmailTo,
                 AutoSize = true,
-                Location = new Point(88, rowY),
+                    Location = new Point(ContactValueLeft, rowY),
                 Font = _valueFont,
                 LinkColor = AppTheme.BannerBlue,
                 ActiveLinkColor = AppTheme.Accent,
@@ -364,7 +365,7 @@ internal sealed class MainForm : Form
             {
                 Text = support.Phone,
                 AutoSize = true,
-                Location = new Point(88, rowY),
+                    Location = new Point(ContactValueLeft, rowY),
                 Font = _valueFont,
                 ForeColor = AppTheme.ValueText
             };
@@ -381,7 +382,7 @@ internal sealed class MainForm : Form
             {
                 Text = support.MobilePhone,
                 AutoSize = true,
-                Location = new Point(88, rowY),
+                    Location = new Point(ContactValueLeft, rowY),
                 Font = _valueFont,
                 ForeColor = AppTheme.ValueText
             };
@@ -398,7 +399,7 @@ internal sealed class MainForm : Form
             {
                 Text = FormatWebsiteDisplay(support.WebsiteUrl),
                 AutoSize = true,
-                Location = new Point(88, rowY),
+                    Location = new Point(ContactValueLeft, rowY),
                 Font = _valueFont,
                 LinkColor = AppTheme.BannerBlue,
                 ActiveLinkColor = AppTheme.Accent,
@@ -567,20 +568,33 @@ internal sealed class MainForm : Form
     {
         if (string.IsNullOrWhiteSpace(url))
         {
-            return url;
+            return string.Empty;
         }
 
-        var display = url.Trim();
-        if (display.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        var trimmed = url.Trim();
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
         {
-            display = display[8..];
-        }
-        else if (display.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-        {
-            display = display[7..];
+            var display = uri.Host;
+            var path = uri.PathAndQuery;
+            if (!string.IsNullOrEmpty(path) && path != "/")
+            {
+                display += path.TrimEnd('/');
+            }
+
+            return display;
         }
 
-        return display.TrimEnd('/');
+        if (trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed[8..].TrimEnd('/');
+        }
+
+        if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed[7..].TrimEnd('/');
+        }
+
+        return trimmed.TrimEnd('/');
     }
 
     private static void OpenWebsite(string url)

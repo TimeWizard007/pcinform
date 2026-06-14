@@ -18,7 +18,7 @@ internal sealed class AboutForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(560, 340);
+        ClientSize = new Size(600, 360);
         BackColor = AppTheme.Background;
         Font = new Font("Segoe UI", 9F);
         ShowInTaskbar = false;
@@ -28,67 +28,80 @@ internal sealed class AboutForm : Form
             Icon = ownerForm.Icon;
         }
 
-        const int left = 28;
-        const int contentWidth = 504;
+        const int left = 32;
+        const int contentWidth = 536;
 
         var titleLabel = new Label
         {
             Text = "PC Inform",
             Font = new Font("Segoe UI", 14F, FontStyle.Bold),
             ForeColor = AppTheme.BannerBlue,
-            AutoSize = true,
-            Location = new Point(left, 24)
+            AutoSize = false,
+            Location = new Point(left, 24),
+            Size = new Size(contentWidth, 28),
+            TextAlign = ContentAlignment.MiddleLeft
         };
 
         _versionLabel = new Label
         {
             Text = $"{LocalizationManager.AboutVersionLabel} v{AppInfoService.Version}",
-            AutoSize = true,
-            Location = new Point(left, 56),
-            ForeColor = AppTheme.ValueText
+            AutoSize = false,
+            Location = new Point(left, 58),
+            Size = new Size(contentWidth, 22),
+            ForeColor = AppTheme.ValueText,
+            TextAlign = ContentAlignment.MiddleLeft
         };
 
         _descriptionLabel = new Label
         {
             Text = LocalizationManager.AboutDescription,
             Location = new Point(left, 88),
-            Size = new Size(contentWidth, 48),
-            ForeColor = AppTheme.LabelText
+            Size = new Size(contentWidth, 56),
+            ForeColor = AppTheme.LabelText,
+            TextAlign = ContentAlignment.TopLeft
         };
 
         var authorCaption = new Label
         {
             Text = LocalizationManager.AboutAuthorLabel,
-            AutoSize = true,
-            Location = new Point(left, 152),
-            ForeColor = AppTheme.LabelText
+            AutoSize = false,
+            Location = new Point(left, 160),
+            Size = new Size(56, 22),
+            ForeColor = AppTheme.LabelText,
+            TextAlign = ContentAlignment.MiddleLeft
         };
 
         var authorValue = new Label
         {
             Text = LocalizationManager.AboutAuthorName,
-            AutoSize = true,
-            Location = new Point(left + 56, 152),
-            ForeColor = AppTheme.ValueText
+            AutoSize = false,
+            Location = new Point(left + 56, 160),
+            Size = new Size(contentWidth - 56, 22),
+            ForeColor = AppTheme.ValueText,
+            TextAlign = ContentAlignment.MiddleLeft
         };
 
         var githubCaption = new Label
         {
             Text = LocalizationManager.AboutGitHubLabel,
-            AutoSize = true,
-            Location = new Point(left, 184),
-            ForeColor = AppTheme.LabelText
+            AutoSize = false,
+            Location = new Point(left, 192),
+            Size = new Size(56, 22),
+            ForeColor = AppTheme.LabelText,
+            TextAlign = ContentAlignment.MiddleLeft
         };
 
         _githubLink = new LinkLabel
         {
             Text = LocalizationManager.AboutGitHubUrl,
-            AutoSize = true,
-            Location = new Point(left + 56, 184),
+            AutoSize = false,
+            Location = new Point(left + 56, 192),
+            Size = new Size(contentWidth - 56, 22),
             LinkColor = AppTheme.BannerBlue,
             ActiveLinkColor = AppTheme.Accent,
             VisitedLinkColor = AppTheme.BannerBlue,
-            Cursor = Cursors.Hand
+            Cursor = Cursors.Hand,
+            TextAlign = ContentAlignment.MiddleLeft
         };
         _githubLink.LinkClicked += (_, _) => OpenGitHub();
 
@@ -96,8 +109,8 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.CloseButton,
             DialogResult = DialogResult.OK,
-            Size = new Size(90, 30),
-            Location = new Point(442, 288),
+            Size = new Size(90, 32),
+            Location = new Point(478, 304),
             FlatStyle = FlatStyle.Flat,
             BackColor = AppTheme.BannerBlue,
             ForeColor = Color.White
