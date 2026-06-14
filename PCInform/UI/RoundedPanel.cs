@@ -1,6 +1,6 @@
-using DaneKomputera.UI;
+using PCInform.UI;
 
-namespace DaneKomputera.UI;
+namespace PCInform.UI;
 
 internal sealed class RoundedPanel : Panel
 {
@@ -19,7 +19,6 @@ internal sealed class RoundedPanel : Panel
         var rect = new Rectangle(0, 0, Width - 1, Height - 1);
         using var path = CreateRoundedRectangle(rect, AppTheme.CornerRadius);
         using var borderPen = new Pen(AppTheme.BorderColor);
-
         e.Graphics.DrawPath(borderPen, path);
     }
 

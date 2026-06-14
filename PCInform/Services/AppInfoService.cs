@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace DaneKomputera.Services;
+namespace PCInform.Services;
 
 internal static class AppInfoService
 {

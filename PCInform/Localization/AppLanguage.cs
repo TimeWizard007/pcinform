@@ -1,4 +1,4 @@
-namespace DaneKomputera.Localization;
+namespace PCInform.Localization;
 
 internal enum AppLanguage
 {

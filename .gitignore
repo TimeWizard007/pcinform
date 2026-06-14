@@ -1,6 +1,40 @@
-bin/
-obj/
-publish/
+# Build output
+**/bin/
+**/obj/
+**/publish/
+**/out/
+
+# Visual Studio / Rider
+.vs/
 *.user
 *.suo
-.vs/
+*.userosscache
+*.sln.docstates
+
+# Cursor / IDE
+.cursor/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Installer output
+installer/output/
+*.exe
+!docs/**
+
+# User-specific config (local dev only)
+appsettings.json
+!appsettings.example.json
+
+# Logs
+*.log
+
+# Audit files
+audit_*.txt
+
+# Temporary files
+*.tmp
+*.bak
