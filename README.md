@@ -35,7 +35,7 @@ Polish and English UI are supported. Branding, contact details, visible fields, 
 
 You can run **PCInform.exe** directly. Configuration still comes from the global file below (create it manually or let PC Inform create safe defaults on first run).
 
-## Configuration {#configuration}
+## Configuration
 
 PC Inform is configured through **one machine-wide** `appsettings.json` file shared by all users on the computer.
 
