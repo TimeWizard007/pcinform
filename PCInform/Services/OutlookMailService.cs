@@ -12,7 +12,12 @@ internal static class OutlookMailService
     private const string MapiProfilesRegistryPath =
         @"Software\Microsoft\Windows NT\CurrentVersion\Windows Messaging Subsystem\Profiles";
 
-    public static bool TryCreateDraft(string to, string subject, string body)
+    public static bool TryCreateDraft(
+        string to,
+        string subject,
+        string body,
+        string? cc = null,
+        string? bcc = null)
     {
         if (!HasUsableMapiProfile())
         {
@@ -56,6 +61,16 @@ internal static class OutlookMailService
 
             dynamic mail = mailItem;
             mail.To = to;
+            if (!string.IsNullOrWhiteSpace(cc))
+            {
+                mail.CC = cc;
+            }
+
+            if (!string.IsNullOrWhiteSpace(bcc))
+            {
+                mail.BCC = bcc;
+            }
+
             mail.Subject = subject;
             mail.Body = body;
             mail.Display(false);

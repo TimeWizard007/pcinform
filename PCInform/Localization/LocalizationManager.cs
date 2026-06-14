@@ -10,11 +10,12 @@ internal static class LocalizationManager
 
     public static void Initialize(AppLanguage language)
     {
-        CurrentLanguage = language;
+        CurrentLanguage = ResolveLanguage(language);
     }
 
     public static void SetLanguage(AppLanguage language)
     {
+        language = ResolveLanguage(language);
         if (CurrentLanguage == language)
         {
             return;
@@ -24,6 +25,44 @@ internal static class LocalizationManager
         Services.SettingsService.SaveLanguage(language);
         LanguageChanged?.Invoke(null, EventArgs.Empty);
     }
+
+    public static bool IsLanguageSwitchVisible =>
+        ConfigurationService.Current.Application.EnablePolish &&
+        ConfigurationService.Current.Application.EnableEnglish;
+
+    public static AppLanguage ResolveLanguage(AppLanguage preferred)
+    {
+        var application = ConfigurationService.Current.Application;
+        if (!application.EnablePolish && !application.EnableEnglish)
+        {
+            return AppLanguage.Polish;
+        }
+
+        if (application.EnablePolish && !application.EnableEnglish)
+        {
+            return AppLanguage.Polish;
+        }
+
+        if (!application.EnablePolish && application.EnableEnglish)
+        {
+            return AppLanguage.English;
+        }
+
+        if (preferred == AppLanguage.English && application.EnableEnglish)
+        {
+            return AppLanguage.English;
+        }
+
+        if (preferred == AppLanguage.Polish && application.EnablePolish)
+        {
+            return AppLanguage.Polish;
+        }
+
+        return application.EnablePolish ? AppLanguage.Polish : AppLanguage.English;
+    }
+
+    public static AppLanguage ResolveLanguage(string? code) =>
+        ResolveLanguage(ParseLanguage(code));
 
     public static AppLanguage ParseLanguage(string? code) => code?.ToLowerInvariant() switch
     {
@@ -41,15 +80,22 @@ internal static class LocalizationManager
     {
         get
         {
-            var company = ConfigurationService.Current.Support.CompanyName;
+            var support = ConfigurationService.Current.Support;
+            if (!support.ShowCompanyName || string.IsNullOrWhiteSpace(support.CompanyName))
+            {
+                return CurrentLanguage == AppLanguage.Polish ? "Kontakt" : "Contact";
+            }
+
             return CurrentLanguage == AppLanguage.Polish
-                ? $"Kontakt — {company}"
-                : $"Contact — {company}";
+                ? $"Kontakt — {support.CompanyName}"
+                : $"Contact — {support.CompanyName}";
         }
     }
 
     public static string EmailLabel => CurrentLanguage == AppLanguage.Polish ? "E-mail:" : "Email:";
     public static string HotlineLabel => CurrentLanguage == AppLanguage.Polish ? "Infolinia:" : "Phone:";
+    public static string MobilePhoneLabel => CurrentLanguage == AppLanguage.Polish ? "Telefon komórkowy:" : "Mobile phone:";
+    public static string WebsiteLabel => CurrentLanguage == AppLanguage.Polish ? "Strona WWW:" : "Website:";
 
     public static string ComputerDataSection => CurrentLanguage == AppLanguage.Polish
         ? "Dane komputera"

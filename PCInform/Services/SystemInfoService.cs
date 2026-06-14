@@ -46,7 +46,8 @@ internal static class SystemInfoService
             ? "poza Active Directory"
             : "outside Active Directory";
 
-        var teamViewerPath = features.ShowTeamViewer ? FindTeamViewerPath() : null;
+        var collectTeamViewer = features.ShowTeamViewer || features.ShowTeamViewerSection;
+        var teamViewerPath = collectTeamViewer ? FindTeamViewerPath() : null;
 
         return new SystemInfoData
         {

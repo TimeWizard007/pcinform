@@ -22,18 +22,19 @@ internal static class ConfigurationService
 
     public static AppSettings LoadSettings()
     {
-        var settings = TryLoadFromFile(AppPaths.ConfigFilePath)
-                       ?? TryLoadFromFile(AppPaths.LocalConfigFilePath)
-                       ?? CreateDefaultSettings();
+        AppSettings settings;
 
-        settings = MergeWithDefaults(settings);
-
-        if (!File.Exists(AppPaths.ConfigFilePath))
+        if (File.Exists(AppPaths.ConfigFilePath))
         {
+            settings = TryLoadFromFile(AppPaths.ConfigFilePath) ?? CreateDefaultSettings();
+        }
+        else
+        {
+            settings = CreateDefaultSettings();
             TrySaveSettings(settings, AppPaths.ConfigFilePath);
         }
 
-        return settings;
+        return MergeWithDefaults(settings);
     }
 
     private static AppSettings? TryLoadFromFile(string path)
@@ -46,11 +47,39 @@ internal static class ConfigurationService
             }
 
             var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
+            if (settings is not null)
+            {
+                ApplyLegacySupportFields(json, settings);
+            }
+
+            return settings;
         }
         catch
         {
             return null;
+        }
+    }
+
+    private static void ApplyLegacySupportFields(string json, AppSettings settings)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            if (!document.RootElement.TryGetProperty("support", out var supportElement))
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(settings.Support.EmailTo) &&
+                supportElement.TryGetProperty("email", out var legacyEmail))
+            {
+                settings.Support.EmailTo = legacyEmail.GetString()?.Trim() ?? string.Empty;
+            }
+        }
+        catch
+        {
+            // Ignore legacy migration failures.
         }
     }
 
@@ -64,7 +93,7 @@ internal static class ConfigurationService
         }
         catch
         {
-            // Ignore config write failures.
+            // Ignore config write failures (e.g. insufficient permissions).
         }
     }
 
@@ -82,16 +111,31 @@ internal static class ConfigurationService
         settings.Application.BannerText = NullIfWhiteSpace(settings.Application.BannerText) ?? defaults.Application.BannerText;
         settings.Application.DefaultLanguage = NullIfWhiteSpace(settings.Application.DefaultLanguage) ?? defaults.Application.DefaultLanguage;
         settings.Application.AccentColor = NullIfWhiteSpace(settings.Application.AccentColor) ?? defaults.Application.AccentColor;
+        settings.Application.WebsiteUrl = settings.Application.WebsiteUrl?.Trim() ?? defaults.Application.WebsiteUrl;
+        NormalizeLanguageSettings(settings.Application);
 
         settings.Support.CompanyName = NullIfWhiteSpace(settings.Support.CompanyName) ?? defaults.Support.CompanyName;
-        settings.Support.Email = settings.Support.Email?.Trim() ?? defaults.Support.Email;
+        settings.Support.EmailTo = settings.Support.EmailTo?.Trim() ?? defaults.Support.EmailTo;
+        settings.Support.EmailCc = settings.Support.EmailCc?.Trim() ?? defaults.Support.EmailCc;
+        settings.Support.EmailBcc = settings.Support.EmailBcc?.Trim() ?? defaults.Support.EmailBcc;
         settings.Support.Phone = settings.Support.Phone?.Trim() ?? defaults.Support.Phone;
+        settings.Support.MobilePhone = settings.Support.MobilePhone?.Trim() ?? defaults.Support.MobilePhone;
+        settings.Support.WebsiteUrl = settings.Support.WebsiteUrl?.Trim() ?? defaults.Support.WebsiteUrl;
         settings.Support.EmailSubjectPrefixPl = NullIfWhiteSpace(settings.Support.EmailSubjectPrefixPl) ?? defaults.Support.EmailSubjectPrefixPl;
         settings.Support.EmailSubjectPrefixEn = NullIfWhiteSpace(settings.Support.EmailSubjectPrefixEn) ?? defaults.Support.EmailSubjectPrefixEn;
 
         settings.Update.VersionUrl = settings.Update.VersionUrl?.Trim() ?? defaults.Update.VersionUrl;
 
         return settings;
+    }
+
+    private static void NormalizeLanguageSettings(ApplicationSettings application)
+    {
+        if (!application.EnablePolish && !application.EnableEnglish)
+        {
+            application.EnablePolish = true;
+            application.EnableEnglish = false;
+        }
     }
 
     private static string? NullIfWhiteSpace(string? value) =>
@@ -105,20 +149,44 @@ internal static class ConfigurationService
             WindowTitle = "PC Inform",
             BannerText = "Service Desk",
             DefaultLanguage = "pl",
-            AccentColor = "#E87722"
+            AccentColor = "#E87722",
+            WebsiteUrl = "https://example.com",
+            EnablePolish = true,
+            EnableEnglish = true
         },
         Support = new SupportSettings
         {
             CompanyName = "Your Company",
-            Email = "helpdesk@example.com",
-            Phone = "+48 000 000 000",
+            EmailTo = "helpdesk@example.com",
+            EmailCc = string.Empty,
+            EmailBcc = string.Empty,
+            Phone = "+48 22 123 45 67",
+            MobilePhone = string.Empty,
+            WebsiteUrl = "https://example.com",
             EmailSubjectPrefixPl = "Pomoc",
-            EmailSubjectPrefixEn = "Support request"
+            EmailSubjectPrefixEn = "Support request",
+            ShowCompanyName = true,
+            ShowEmail = true,
+            ShowPhone = true,
+            ShowMobilePhone = false,
+            ShowWebsite = true
         },
         Features = new FeatureSettings
         {
-            ShowTeamViewer = true,
-            AllowLaunchTeamViewer = true,
+            ShowComputerName = true,
+            ShowDomain = true,
+            ShowOperatingSystem = true,
+            ShowIpAddress = true,
+            ShowDnsServers = true,
+            ShowUptime = true,
+            ShowManufacturerModel = true,
+            ShowSerialNumber = true,
+            ShowDeviceType = true,
+            ShowUserLogin = true,
+            ShowDisplayName = true,
+            ShowTeamViewerSection = false,
+            ShowTeamViewer = false,
+            AllowLaunchTeamViewer = false,
             DetectAtera = false,
             ShowAteraInGui = false,
             IncludeAteraInReports = false,

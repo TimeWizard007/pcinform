@@ -12,17 +12,23 @@ internal static class SettingsService
         {
             if (!File.Exists(AppPaths.UserSettingsFilePath))
             {
-                return LocalizationManager.ParseLanguage(ConfigurationService.Current.Application.DefaultLanguage);
+                return LocalizationManager.ResolveLanguage(ConfigurationService.Current.Application.DefaultLanguage);
             }
 
             var json = File.ReadAllText(AppPaths.UserSettingsFilePath);
             var settings = JsonSerializer.Deserialize<UserSettings>(json);
-            return LocalizationManager.ParseLanguage(settings?.Language);
+            return LocalizationManager.ResolveLanguage(settings?.Language);
         }
         catch
         {
-            return LocalizationManager.ParseLanguage(ConfigurationService.Current.Application.DefaultLanguage);
+            return LocalizationManager.ResolveLanguage(ConfigurationService.Current.Application.DefaultLanguage);
         }
+    }
+
+    public static AppLanguage LoadInitialLanguage()
+    {
+        var preferred = LoadLanguage();
+        return LocalizationManager.ResolveLanguage(preferred);
     }
 
     public static void SaveLanguage(AppLanguage language)

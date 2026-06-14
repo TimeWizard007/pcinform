@@ -8,7 +8,7 @@ internal static class Program
         ApplicationConfiguration.Initialize();
         Configuration.ConfigurationService.Initialize();
         UI.AppTheme.Initialize(Configuration.ConfigurationService.Current.Application.AccentColor);
-        Localization.LocalizationManager.Initialize(Services.SettingsService.LoadLanguage());
+        Localization.LocalizationManager.Initialize(Services.SettingsService.LoadInitialLanguage());
         Application.Run(new MainForm());
     }
 }

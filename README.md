@@ -1,150 +1,167 @@
 # PC Inform
 
-**PC Inform** (`pcinform`) is a lightweight, open-source Windows desktop utility for help desks and IT teams. It collects essential PC and user information and makes it easy to copy or email support details — without requiring administrator rights.
+**PC Inform** is a lightweight Windows desktop utility for help desks and IT teams. It collects essential PC and user information and makes it easy to copy details or prepare a support email — without requiring administrator rights to run the application.
+
+Polish and English UI are supported. Branding, contact details, visible fields, and optional behaviors are controlled by a single machine-wide configuration file.
 
 ## Features
 
-- **Computer information:** name, AD domain, OS, IPv4, DNS, uptime, manufacturer/model, BIOS serial, device type
-- **User information:** login (`DOMAIN\username`) and display name
-- **Optional agents:** TeamViewer status/launch, optional Atera detection (disabled in public defaults)
-- **Support workflow:** copy formatted report to clipboard, open prefilled support email
-- **Email integration:** Outlook Classic COM draft (when a MAPI profile exists) with `mailto:` fallback
-- **Localization:** Polish and English UI
-- **Configuration:** fully customizable via `appsettings.json`
-- **Updates:** optional remote version check (configured by administrators)
-- **No admin required:** runs with standard user permissions
+- **Computer information:** name, AD domain, OS, IPv4, DNS, uptime, manufacturer/model, BIOS serial, device type (each field can be shown or hidden)
+- **User information:** login and display name (optional)
+- **Contact section:** configurable email, phone, mobile phone, and website
+- **Support workflow:** copy a formatted report to the clipboard, open a prefilled **Report problem** email draft
+- **Email integration:** Outlook Classic draft when a MAPI profile exists, with `mailto:` fallback; CC/BCC used when configured
+- **Localization:** Polish and English; language switcher can be limited to one language by configuration
+- **About dialog:** version, description, author, and project link
+- **Optional update notice:** administrators can enable a remote version check (disabled by default; opens a download page in the browser only — no automatic install)
+
+## Requirements
+
+- Windows 10 or 11 (64-bit)
+- Standard user account (no administrator rights required to run PC Inform)
+- A mail client for **Report problem** (for example Outlook or any application registered for `mailto:`)
+
+## Installation
+
+### Installer (recommended)
+
+1. Download **PCInform-Setup.exe** from [GitHub Releases](https://github.com/TimeWizard007/pcinform/releases).
+2. Run the installer. Administrator rights are not required for the application install.
+3. PC Inform is installed per user under `%LOCALAPPDATA%\PCInform\`.
+4. On first install, the installer creates a default configuration at `C:\ProgramData\PCInform\appsettings.json` if that file does not already exist.
+5. Existing configuration is **never overwritten** during upgrade.
+
+### Portable use
+
+You can run **PCInform.exe** directly. Configuration still comes from the global file below (create it manually or let PC Inform create safe defaults on first run).
 
 ## Configuration
 
-`appsettings.json` controls branding, support contact details, feature toggles, and update behavior.
+PC Inform is configured through **one machine-wide** `appsettings.json` file shared by all users on the computer.
 
-On first run, PC Inform creates a default configuration at:
+### Global configuration location
 
 ```
-%LOCALAPPDATA%\PCInform\appsettings.json
+C:\ProgramData\PCInform\appsettings.json
 ```
 
-You can also place `appsettings.json` next to the executable for portable deployments.
+Environment variable form: `%PROGRAMDATA%\PCInform\appsettings.json`
 
-See [appsettings.example.json](appsettings.example.json) for all available options:
+PC Inform does **not** use:
 
-| Section | Purpose |
-|---------|---------|
-| `application` | App name, window title, banner text, default language, accent color |
-| `support` | Company name, email, phone, email subject prefixes |
-| `features` | TeamViewer, Atera, update check toggles |
-| `update` | Remote `version.json` URL and enable flag |
+- `%LOCALAPPDATA%\PCInform\appsettings.json`
+- `appsettings.json` next to the executable
 
-User language preference is stored separately at:
+On first run, if the global file is missing, PC Inform creates the folder and a default file with safe public settings. An existing file is never modified automatically.
+
+Per-user **language preference** only is stored at:
 
 ```
 %APPDATA%\PCInform\settings.json
 ```
 
-### Administrator vs end user
+See [appsettings.example.json](appsettings.example.json) for a full example.
 
-- **Administrators / deployment:** customize `appsettings.json` for your organization (support email, banner, accent color, optional update URL).
-- **Update settings** (`features.checkUpdates`, `update.enabled`, `update.versionUrl`) are intended for **administrator or deployment configuration**, not casual end-user changes.
-- **End users** normally edit only language (in-app) and use the app — they should not need to change update configuration.
+### Application settings (`application`)
 
-Public defaults disable Atera detection and automatic update checks. Enable them in your deployed `appsettings.json` when needed.
+| Setting | Purpose |
+|---------|---------|
+| `name`, `windowTitle`, `bannerText` | Application name and banner text |
+| `defaultLanguage` | Default UI language (`pl` or `en`) when the user has no saved preference |
+| `accentColor` | Accent color (hex, e.g. `#E87722`) |
+| `enablePolish`, `enableEnglish` | Which languages are available; if only one is enabled, the language switcher is hidden |
 
-## Installation
+### Contact configuration (`support`)
 
-### End users (installer)
+| Setting | Purpose |
+|---------|---------|
+| `companyName` | Organization name (used in the contact section title when enabled) |
+| `emailTo` | Support recipient for **Report problem** and displayed contact email |
+| `emailCc`, `emailBcc` | Optional CC/BCC on support email drafts |
+| `emailSubjectPrefixPl`, `emailSubjectPrefixEn` | Subject prefix by language |
+| `phone` | Landline / main phone (e.g. `+48 22 123 45 67`) |
+| `mobilePhone` | Mobile phone (e.g. `+48 500 600 700`) |
+| `showCompanyName`, `showEmail`, `showPhone`, `showMobilePhone`, `showWebsite` | Visibility of each contact item |
 
-1. Download `PCInform-Setup.exe` from [GitHub Releases](https://github.com/TimeWizard007/pcinform/releases).
-2. Run the installer — **no administrator rights required**.
-3. The app installs to `%LOCALAPPDATA%\PCInform\`.
-4. Optionally create a desktop shortcut during setup.
+**Support email behavior:**
 
-Existing `appsettings.json` files are preserved during upgrades.
+- **Report problem** creates a draft in the user's mail client only (no SMTP sending).
+- The **From** address is always the user's mail account — it is not configured in PC Inform.
+- Disabled contact fields are hidden from the UI, clipboard report, and email body.
 
-### Portable
+Phone labels in the UI: Polish *Infolinia* / *Telefon komórkowy*; English *Phone* / *Mobile phone*.
 
-Copy `PCInform.exe` (and optionally `appsettings.json`) to any folder and run directly.
+### Website configuration
 
-## Update mechanism
+Website URL is set under `support.websiteUrl`. Display is controlled by `support.showWebsite`.
 
-When enabled in **administrator-provided** `appsettings.json`, PC Inform checks a remote `version.json` on startup.
+- When enabled and a URL is set, the contact section shows a clickable link (Polish: **Strona WWW**, English: **Website**).
+- When the URL is empty or `showWebsite` is `false`, the website row is hidden.
 
-Example format — see [docs/version.example.json](docs/version.example.json).
+`application.websiteUrl` is available for future or custom use; the contact section uses `support.websiteUrl`.
 
-Behavior:
+### Feature flags (`features`)
 
-- Compares remote version with the running assembly version
-- Shows a localized Yes/No dialog if a newer version exists
-- Opens `downloadUrl` in the default browser when the user chooses Yes
-- Does **not** silently install updates
-- Failures do **not** block application startup
+Organizations can show a **minimal** UI (banner + contact + Report problem) or a **full diagnostic** view by editing `appsettings.json` — no recompile required.
 
-See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for the full release and `version.json` workflow.
+**Field visibility** (default **true** unless noted):
 
-## Build from source
+- Computer: `showComputerName`, `showDomain`, `showOperatingSystem`, `showIpAddress`, `showDnsServers`, `showUptime`, `showManufacturerModel`, `showSerialNumber`, `showDeviceType`
+- User: `showUserLogin`, `showDisplayName`
+- TeamViewer section: `showTeamViewerSection` (default **false**)
 
-### Requirements
+Disabled fields are omitted from the UI, clipboard report, and support email.
 
-- Windows 10 or 11 (or Linux with .NET SDK for cross-publish)
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+**Optional integrations** (default **false** in public configuration):
 
-### Debug run
+| Flag | Purpose |
+|------|---------|
+| `showTeamViewer` | Detect TeamViewer for reports |
+| `allowLaunchTeamViewer` | Show launch button when TeamViewer is installed |
+| `detectAtera` | Detect Atera agent |
+| `showAteraInGui` | Show Atera in the UI |
+| `includeAteraInReports` | Include Atera in copied/emailed reports |
+| `checkUpdates` | Allow update check on startup |
 
-```powershell
-dotnet run --project PCInform\PCInform.csproj
-```
+### Update configuration (`update`)
 
-### Release publish
+Update checking is **disabled by default**. PC Inform does not install updates automatically.
 
-```powershell
-dotnet publish PCInform\PCInform.csproj `
-  -c Release `
-  -r win-x64 `
-  --self-contained true `
-  /p:PublishSingleFile=true `
-  /p:PublishTrimmed=false `
-  /p:IncludeNativeLibrariesForSelfExtract=true `
-  /p:EnableCompressionInSingleFile=true
-```
+| Setting | Purpose |
+|---------|---------|
+| `enabled` | Master switch for update check (default `false`) |
+| `versionUrl` | URL of remote `version.json` (default empty) |
 
-Output:
+Both `update.enabled` and `features.checkUpdates` must be enabled for a check to run. When a newer version is found, the user sees a Yes/No dialog; choosing Yes opens the download URL in the default browser.
 
-```
-PCInform\bin\Release\net8.0-windows\win-x64\publish\PCInform.exe
-```
+Example remote metadata format: [docs/version.example.json](docs/version.example.json).
 
-Replace `PCInform\icon.ico` with your own icon before publishing.
+Administrators who enable updates must host `version.json` and point `versionUrl` to it. End users normally should not change update settings.
 
-## Release process
+## GitHub Releases
 
-See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
+Official builds are published at:
 
-Summary:
+**https://github.com/TimeWizard007/pcinform/releases**
 
-1. Update version in `PCInform/PCInform.csproj` and `CHANGELOG.md`.
-2. Publish and build `PCInform-Setup.exe` with Inno Setup.
-3. Create a GitHub Release and attach the installer (do **not** commit binaries to the source tree).
-4. Publish `version.json` for deployments that enable update checks.
+Typical assets:
 
-## Project structure
+- **PCInform-Setup.exe** — recommended installer for end users
+- **PCInform.exe** — optional portable binary (when provided)
+- **version.json** — optional metadata for deployments that enable update checks
 
-```
-pcinform/
-├── PCInform/              # Application source
-├── appsettings.example.json
-├── docs/
-│   ├── version.example.json
-│   └── RELEASE_PROCESS.md
-├── installer/PCInform.iss
-├── LICENSE
-└── CHANGELOG.md
-```
+Download the installer from the latest release unless your IT team provides an internal package.
+
+## Security notes
+
+- No secrets or private URLs are embedded in the application.
+- Update downloads open in the browser only; installers are never run automatically.
+- Company, support, and feature configuration is machine-wide; only UI language preference is per user.
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
 
-## Security
+## For developers
 
-- No secrets, tokens, or private URLs are embedded in the application.
-- Update downloads are opened in the browser only — installers are never auto-run.
-- Configuration is local to the user machine.
+Build instructions, project layout, and release workflow are documented in [docs/DEVELOPER.md](docs/DEVELOPER.md) and [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).

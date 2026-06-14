@@ -7,30 +7,42 @@ internal static class MailHelper
 {
     public static bool TryOpenHelpdeskEmail()
     {
-        return TryOpenEmail(ConfigurationService.Current.Support.Email);
+        var support = ConfigurationService.Current.Support;
+        return TryOpenEmail(support.EmailTo, cc: support.EmailCc, bcc: support.EmailBcc);
     }
 
     public static bool TryOpenReport(string subject, string body)
     {
-        return TryOpenEmail(ConfigurationService.Current.Support.Email, subject, body);
+        var support = ConfigurationService.Current.Support;
+        return TryOpenEmail(support.EmailTo, subject, body, support.EmailCc, support.EmailBcc);
     }
 
-    public static bool TryOpenEmail(string to, string? subject = null, string? body = null)
+    public static bool TryOpenEmail(
+        string to,
+        string? subject = null,
+        string? body = null,
+        string? cc = null,
+        string? bcc = null)
     {
         if (string.IsNullOrWhiteSpace(to))
         {
             return false;
         }
 
-        if (OutlookMailService.TryCreateDraft(to, subject ?? string.Empty, body ?? string.Empty))
+        if (OutlookMailService.TryCreateDraft(to, subject ?? string.Empty, body ?? string.Empty, cc, bcc))
         {
             return true;
         }
 
-        return TryOpenMailto(to, subject, body);
+        return TryOpenMailto(to, subject, body, cc, bcc);
     }
 
-    private static bool TryOpenMailto(string to, string? subject, string? body)
+    private static bool TryOpenMailto(
+        string to,
+        string? subject,
+        string? body,
+        string? cc,
+        string? bcc)
     {
         try
         {
@@ -39,7 +51,7 @@ internal static class MailHelper
                 return false;
             }
 
-            var url = BuildMailtoUrl(to, subject, body);
+            var url = BuildMailtoUrl(to, subject, body, cc, bcc);
             Process.Start(new ProcessStartInfo
             {
                 FileName = url,
@@ -53,10 +65,25 @@ internal static class MailHelper
         }
     }
 
-    private static string BuildMailtoUrl(string to, string? subject, string? body)
+    private static string BuildMailtoUrl(
+        string to,
+        string? subject,
+        string? body,
+        string? cc,
+        string? bcc)
     {
         var url = $"mailto:{Uri.EscapeDataString(to)}";
         var queryParts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(cc))
+        {
+            queryParts.Add($"cc={Uri.EscapeDataString(cc)}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(bcc))
+        {
+            queryParts.Add($"bcc={Uri.EscapeDataString(bcc)}");
+        }
 
         if (!string.IsNullOrEmpty(subject))
         {

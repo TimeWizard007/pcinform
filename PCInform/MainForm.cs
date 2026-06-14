@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using PCInform.Configuration;
 using PCInform.Localization;
 using PCInform.Models;
@@ -8,6 +9,14 @@ namespace PCInform;
 
 internal sealed class MainForm : Form
 {
+    private sealed class BoundField
+    {
+        public required Label Caption { get; init; }
+        public required TextBox Value { get; init; }
+        public required Func<string> GetLabel { get; init; }
+        public required Action<SystemInfoData> ApplyValue { get; init; }
+    }
+
     private readonly Font _labelFont = new("Segoe UI", 9F, FontStyle.Regular);
     private readonly Font _valueFont = new("Segoe UI", 9F, FontStyle.Regular);
     private readonly Font _bannerFont = new("Segoe UI", 14F, FontStyle.Bold);
@@ -21,49 +30,31 @@ internal sealed class MainForm : Form
     private Label _loadingLabel = null!;
     private Label _bannerLabel = null!;
 
-    private Label _contactSectionLabel = null!;
-    private RoundedPanel _contactPanel = null!;
-    private Label _emailCaptionLabel = null!;
-    private Label _hotlineCaptionLabel = null!;
-    private LinkLabel _emailLink = null!;
-    private Label _hotlineValueLabel = null!;
+    private Label? _contactSectionLabel;
+    private RoundedPanel? _contactPanel;
+    private Label? _emailCaptionLabel;
+    private Label? _hotlineCaptionLabel;
+    private Label? _mobilePhoneCaptionLabel;
+    private Label? _websiteCaptionLabel;
+    private LinkLabel? _emailLink;
+    private Label? _hotlineValueLabel;
+    private Label? _mobilePhoneValueLabel;
+    private LinkLabel? _websiteLink;
 
-    private Label _computerSectionLabel = null!;
-    private Label _computerNameCaption = null!;
-    private Label _domainCaption = null!;
-    private Label _osCaption = null!;
-    private Label _ipCaption = null!;
-    private Label _dnsCaption = null!;
-    private Label _uptimeCaption = null!;
-    private Label _manufacturerCaption = null!;
-    private Label _biosCaption = null!;
-    private Label _machineTypeCaption = null!;
+    private Label? _computerSectionLabel;
+    private Label? _userSectionLabel;
+    private Label? _teamViewerSectionLabel;
+    private Label? _teamViewerStatusCaption;
+    private TextBox? _teamViewerStatusValue;
+    private Button? _launchTeamViewerButton;
+    private RoundedPanel? _teamViewerPanel;
 
-    private TextBox _computerNameValue = null!;
-    private TextBox _domainValue = null!;
-    private TextBox _osValue = null!;
-    private TextBox _ipValue = null!;
-    private TextBox _dnsValue = null!;
-    private TextBox _uptimeValue = null!;
-    private TextBox _manufacturerValue = null!;
-    private TextBox _biosValue = null!;
-    private TextBox _machineTypeValue = null!;
+    private readonly List<BoundField> _computerFields = [];
+    private readonly List<BoundField> _userFields = [];
 
-    private Label _userSectionLabel = null!;
-    private Label _userLoginCaption = null!;
-    private Label _userDisplayNameCaption = null!;
-    private TextBox _userLoginValue = null!;
-    private TextBox _userDisplayNameValue = null!;
-
-    private Label _teamViewerSectionLabel = null!;
-    private Label _teamViewerStatusCaption = null!;
-    private TextBox _teamViewerStatusValue = null!;
-    private Button _launchTeamViewerButton = null!;
-    private RoundedPanel _teamViewerPanel = null!;
-
-    private LinkLabel _polishLink = null!;
-    private LinkLabel _englishLink = null!;
-    private Label _languageSeparator = null!;
+    private LinkLabel? _polishLink;
+    private LinkLabel? _englishLink;
+    private Label? _languageSeparator;
     private Label _footerLabel = null!;
     private LinkLabel _aboutLink = null!;
 
@@ -72,7 +63,7 @@ internal sealed class MainForm : Form
     private Button _reportButton = null!;
     private Button _closeButton = null!;
 
-    private TextBox[] _dataValueBoxes = null!;
+    private TextBox[] _dataValueBoxes = [];
 
     public MainForm()
     {
@@ -134,9 +125,8 @@ internal sealed class MainForm : Form
     {
         var support = ConfigurationService.Current.Support;
         var features = ConfigurationService.Current.Features;
-        var hasEmail = !string.IsNullOrWhiteSpace(support.Email);
-        var hasPhone = !string.IsNullOrWhiteSpace(support.Phone);
-        var showContact = hasEmail || hasPhone;
+        var showLanguageSwitch = LocalizationManager.IsLanguageSwitchVisible;
+        var hasReportEmail = !string.IsNullOrWhiteSpace(support.EmailTo);
 
         var bannerPanel = new Panel
         {
@@ -161,24 +151,27 @@ internal sealed class MainForm : Form
             Location = new Point(20, 16)
         };
 
-        _polishLink = CreateLanguageLink(LocalizationManager.LanguagePolish, 456);
-        _languageSeparator = new Label
-        {
-            Text = "|",
-            ForeColor = Color.White,
-            AutoSize = true,
-            Font = _labelFont,
-            Location = new Point(508, 20)
-        };
-        _englishLink = CreateLanguageLink(LocalizationManager.LanguageEnglish, 522);
-
-        _polishLink.Click += (_, _) => LocalizationManager.SetLanguage(AppLanguage.Polish);
-        _englishLink.Click += (_, _) => LocalizationManager.SetLanguage(AppLanguage.English);
-
         bannerPanel.Controls.Add(_bannerLabel);
-        bannerPanel.Controls.Add(_polishLink);
-        bannerPanel.Controls.Add(_languageSeparator);
-        bannerPanel.Controls.Add(_englishLink);
+
+        if (showLanguageSwitch)
+        {
+            _polishLink = CreateLanguageLink(LocalizationManager.LanguagePolish, 456);
+            _languageSeparator = new Label
+            {
+                Text = "|",
+                ForeColor = Color.White,
+                AutoSize = true,
+                Font = _labelFont,
+                Location = new Point(508, 20)
+            };
+            _englishLink = CreateLanguageLink(LocalizationManager.LanguageEnglish, 522);
+            _polishLink.Click += (_, _) => LocalizationManager.SetLanguage(AppLanguage.Polish);
+            _englishLink.Click += (_, _) => LocalizationManager.SetLanguage(AppLanguage.English);
+            bannerPanel.Controls.Add(_polishLink);
+            bannerPanel.Controls.Add(_languageSeparator);
+            bannerPanel.Controls.Add(_englishLink);
+        }
+
         bannerPanel.Controls.Add(accentStrip);
 
         _footerLabel = new Label
@@ -195,24 +188,28 @@ internal sealed class MainForm : Form
         {
             Text = LocalizationManager.AboutLink,
             AutoSize = true,
-            Anchor = AnchorStyles.Top | AnchorStyles.Right,
-            Location = new Point(548, 4),
             LinkColor = AppTheme.BannerBlue,
             ActiveLinkColor = AppTheme.Accent,
             VisitedLinkColor = AppTheme.BannerBlue,
             Font = _footerFont,
-            Cursor = Cursors.Hand
+            Cursor = Cursors.Hand,
+            TextAlign = ContentAlignment.MiddleRight,
+            Padding = new Padding(0, 0, 12, 0)
         };
         _aboutLink.Click += (_, _) => ShowAboutDialog();
 
-        var footerPanel = new Panel
+        var footerPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Bottom,
             Height = 22,
-            BackColor = AppTheme.FooterBackground
+            BackColor = AppTheme.FooterBackground,
+            ColumnCount = 2,
+            RowCount = 1
         };
-        footerPanel.Controls.Add(_footerLabel);
-        footerPanel.Controls.Add(_aboutLink);
+        footerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        footerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        footerPanel.Controls.Add(_footerLabel, 0, 0);
+        footerPanel.Controls.Add(_aboutLink, 1, 0);
 
         var buttonPanel = new Panel
         {
@@ -229,7 +226,7 @@ internal sealed class MainForm : Form
 
         _reportButton = CreateSecondaryButton(LocalizationManager.ReportButton, new Point(298, 12), new Size(120, 32));
         _reportButton.Click += (_, _) => ReportProblem();
-        _reportButton.Enabled = hasEmail;
+        _reportButton.Enabled = hasReportEmail;
 
         _closeButton = CreateSecondaryButton(LocalizationManager.CloseButton, new Point(524, 12), new Size(100, 32));
         _closeButton.Click += (_, _) => Close();
@@ -258,117 +255,15 @@ internal sealed class MainForm : Form
         _contentPanel.Controls.Add(_loadingLabel);
 
         var y = 24;
+        BuildContactSection(support, ref y);
+        BuildComputerSection(features, ref y);
+        BuildUserSection(features, ref y);
+        BuildTeamViewerSection(features, ref y);
 
-        if (showContact)
-        {
-            _contactSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.ContactSection, ref y);
-            _contactPanel = CreateSectionPanel(_contentPanel, y, hasEmail && hasPhone ? 72 : 44);
-            y += _contactPanel.Height + 12;
-
-            var rowY = 14;
-            if (hasEmail)
-            {
-                _emailCaptionLabel = CreateCaptionLabel(LocalizationManager.EmailLabel);
-                _emailCaptionLabel.Location = new Point(12, rowY);
-                _emailLink = new LinkLabel
-                {
-                    Text = support.Email,
-                    AutoSize = true,
-                    Location = new Point(88, rowY),
-                    Font = _valueFont,
-                    LinkColor = AppTheme.BannerBlue,
-                    ActiveLinkColor = AppTheme.Accent,
-                    VisitedLinkColor = AppTheme.BannerBlue,
-                    Cursor = Cursors.Hand
-                };
-                _emailLink.Click += (_, _) => TryOpenEmail(MailHelper.TryOpenHelpdeskEmail);
-                _contactPanel.Controls.Add(_emailCaptionLabel);
-                _contactPanel.Controls.Add(_emailLink);
-                rowY += 28;
-            }
-
-            if (hasPhone)
-            {
-                _hotlineCaptionLabel = CreateCaptionLabel(LocalizationManager.HotlineLabel);
-                _hotlineCaptionLabel.Location = new Point(12, rowY);
-                _hotlineValueLabel = new Label
-                {
-                    Text = support.Phone,
-                    AutoSize = true,
-                    Location = new Point(88, rowY),
-                    Font = _valueFont,
-                    ForeColor = AppTheme.ValueText
-                };
-                _contactPanel.Controls.Add(_hotlineCaptionLabel);
-                _contactPanel.Controls.Add(_hotlineValueLabel);
-            }
-        }
-
-        _computerSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.ComputerDataSection, ref y);
-        var computerPanel = CreateSectionPanel(_contentPanel, y, 272);
-        y += 284;
-
-        var computerTable = CreateFieldTable(computerPanel, 9);
-        _computerNameCaption = computerTable.Captions[0];
-        _domainCaption = computerTable.Captions[1];
-        _osCaption = computerTable.Captions[2];
-        _ipCaption = computerTable.Captions[3];
-        _dnsCaption = computerTable.Captions[4];
-        _uptimeCaption = computerTable.Captions[5];
-        _manufacturerCaption = computerTable.Captions[6];
-        _biosCaption = computerTable.Captions[7];
-        _machineTypeCaption = computerTable.Captions[8];
-
-        _computerNameValue = computerTable.Values[0];
-        _domainValue = computerTable.Values[1];
-        _osValue = computerTable.Values[2];
-        _ipValue = computerTable.Values[3];
-        _dnsValue = computerTable.Values[4];
-        _uptimeValue = computerTable.Values[5];
-        _manufacturerValue = computerTable.Values[6];
-        _biosValue = computerTable.Values[7];
-        _machineTypeValue = computerTable.Values[8];
-
-        _userSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.UserDataSection, ref y);
-        var userPanel = CreateSectionPanel(_contentPanel, y, 78);
-        y += 90;
-
-        var userTable = CreateFieldTable(userPanel, 2);
-        _userLoginCaption = userTable.Captions[0];
-        _userDisplayNameCaption = userTable.Captions[1];
-        _userLoginValue = userTable.Values[0];
-        _userDisplayNameValue = userTable.Values[1];
-
-        if (features.ShowTeamViewer)
-        {
-            _teamViewerSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.TeamViewerSection, ref y);
-            _teamViewerPanel = CreateSectionPanel(_contentPanel, y, 52);
-            y += 64;
-
-            var teamViewerTable = CreateFieldTable(_teamViewerPanel, 1);
-            _teamViewerStatusCaption = teamViewerTable.Captions[0];
-            _teamViewerStatusValue = teamViewerTable.Values[0];
-
-            if (features.AllowLaunchTeamViewer)
-            {
-                _launchTeamViewerButton = CreateAccentButton(
-                    LocalizationManager.LaunchTeamViewerButton,
-                    new Point(12, 34),
-                    new Size(170, 28));
-                _launchTeamViewerButton.Visible = false;
-                _launchTeamViewerButton.Click += (_, _) => LaunchTeamViewer();
-                _teamViewerPanel.Controls.Add(_launchTeamViewerButton);
-            }
-        }
-
-        var valueBoxes = new List<TextBox>
-        {
-            _computerNameValue, _domainValue, _osValue, _ipValue, _dnsValue, _uptimeValue,
-            _manufacturerValue, _biosValue, _machineTypeValue,
-            _userLoginValue, _userDisplayNameValue
-        };
-
-        if (features.ShowTeamViewer)
+        var valueBoxes = new List<TextBox>();
+        valueBoxes.AddRange(_computerFields.Select(f => f.Value));
+        valueBoxes.AddRange(_userFields.Select(f => f.Value));
+        if (_teamViewerStatusValue is not null)
         {
             valueBoxes.Add(_teamViewerStatusValue);
         }
@@ -382,10 +277,260 @@ internal sealed class MainForm : Form
         Controls.Add(bannerPanel);
     }
 
+    private void BuildContactSection(SupportSettings support, ref int y)
+    {
+        if (!VisibilityHelper.IsContactSectionVisible(support))
+        {
+            return;
+        }
+
+        var rowCount =
+            (VisibilityHelper.IsEmailVisible(support) ? 1 : 0) +
+            (VisibilityHelper.IsPhoneVisible(support) ? 1 : 0) +
+            (VisibilityHelper.IsMobilePhoneVisible(support) ? 1 : 0) +
+            (VisibilityHelper.IsWebsiteVisible(support) ? 1 : 0);
+
+        _contactSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.ContactSection, ref y);
+        _contactPanel = CreateSectionPanel(_contentPanel, y, rowCount * 28 + 16);
+        y += _contactPanel.Height + 12;
+
+        var rowY = 14;
+        if (VisibilityHelper.IsEmailVisible(support))
+        {
+            _emailCaptionLabel = CreateCaptionLabel(LocalizationManager.EmailLabel);
+            _emailCaptionLabel.Location = new Point(12, rowY);
+            _emailLink = new LinkLabel
+            {
+                Text = support.EmailTo,
+                AutoSize = true,
+                Location = new Point(88, rowY),
+                Font = _valueFont,
+                LinkColor = AppTheme.BannerBlue,
+                ActiveLinkColor = AppTheme.Accent,
+                VisitedLinkColor = AppTheme.BannerBlue,
+                Cursor = Cursors.Hand
+            };
+            _emailLink.Click += (_, _) => TryOpenEmail(MailHelper.TryOpenHelpdeskEmail);
+            _contactPanel.Controls.Add(_emailCaptionLabel);
+            _contactPanel.Controls.Add(_emailLink);
+            rowY += 28;
+        }
+
+        if (VisibilityHelper.IsPhoneVisible(support))
+        {
+            _hotlineCaptionLabel = CreateCaptionLabel(LocalizationManager.HotlineLabel);
+            _hotlineCaptionLabel.Location = new Point(12, rowY);
+            _hotlineValueLabel = new Label
+            {
+                Text = support.Phone,
+                AutoSize = true,
+                Location = new Point(88, rowY),
+                Font = _valueFont,
+                ForeColor = AppTheme.ValueText
+            };
+            _contactPanel.Controls.Add(_hotlineCaptionLabel);
+            _contactPanel.Controls.Add(_hotlineValueLabel);
+            rowY += 28;
+        }
+
+        if (VisibilityHelper.IsMobilePhoneVisible(support))
+        {
+            _mobilePhoneCaptionLabel = CreateCaptionLabel(LocalizationManager.MobilePhoneLabel);
+            _mobilePhoneCaptionLabel.Location = new Point(12, rowY);
+            _mobilePhoneValueLabel = new Label
+            {
+                Text = support.MobilePhone,
+                AutoSize = true,
+                Location = new Point(88, rowY),
+                Font = _valueFont,
+                ForeColor = AppTheme.ValueText
+            };
+            _contactPanel.Controls.Add(_mobilePhoneCaptionLabel);
+            _contactPanel.Controls.Add(_mobilePhoneValueLabel);
+            rowY += 28;
+        }
+
+        if (VisibilityHelper.IsWebsiteVisible(support))
+        {
+            _websiteCaptionLabel = CreateCaptionLabel(LocalizationManager.WebsiteLabel);
+            _websiteCaptionLabel.Location = new Point(12, rowY);
+            _websiteLink = new LinkLabel
+            {
+                Text = support.WebsiteUrl,
+                AutoSize = true,
+                Location = new Point(88, rowY),
+                Font = _valueFont,
+                LinkColor = AppTheme.BannerBlue,
+                ActiveLinkColor = AppTheme.Accent,
+                VisitedLinkColor = AppTheme.BannerBlue,
+                Cursor = Cursors.Hand
+            };
+            _websiteLink.LinkClicked += (_, _) => OpenWebsite(support.WebsiteUrl);
+            _contactPanel.Controls.Add(_websiteCaptionLabel);
+            _contactPanel.Controls.Add(_websiteLink);
+        }
+    }
+
+    private void BuildComputerSection(FeatureSettings features, ref int y)
+    {
+        var definitions = new List<(bool Visible, Func<string> Label, Action<SystemInfoData, TextBox> Apply)>();
+        if (features.ShowComputerName)
+        {
+            definitions.Add((true, () => LocalizationManager.ComputerNameLabel, (d, t) => t.Text = d.ComputerName));
+        }
+
+        if (features.ShowDomain)
+        {
+            definitions.Add((true, () => LocalizationManager.DomainLabel, (d, t) => t.Text = d.Domain));
+        }
+
+        if (features.ShowOperatingSystem)
+        {
+            definitions.Add((true, () => LocalizationManager.OperatingSystemLabel, (d, t) => t.Text = d.OperatingSystem));
+        }
+
+        if (features.ShowIpAddress)
+        {
+            definitions.Add((true, () => LocalizationManager.IpAddressLabel, (d, t) => t.Text = d.IpAddress));
+        }
+
+        if (features.ShowDnsServers)
+        {
+            definitions.Add((true, () => LocalizationManager.DnsLabel, (d, t) => t.Text = d.DnsServers));
+        }
+
+        if (features.ShowUptime)
+        {
+            definitions.Add((true, () => LocalizationManager.UptimeLabel, (d, t) => t.Text = d.Uptime));
+        }
+
+        if (features.ShowManufacturerModel)
+        {
+            definitions.Add((true, () => LocalizationManager.ManufacturerLabel, (d, t) => t.Text = d.ManufacturerModel));
+        }
+
+        if (features.ShowSerialNumber)
+        {
+            definitions.Add((true, () => LocalizationManager.BiosSerialLabel, (d, t) => t.Text = d.BiosSerial));
+        }
+
+        if (features.ShowDeviceType)
+        {
+            definitions.Add((true, () => LocalizationManager.MachineTypeLabel, (d, t) => t.Text = d.MachineType));
+        }
+
+        if (definitions.Count == 0)
+        {
+            return;
+        }
+
+        _computerSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.ComputerDataSection, ref y);
+        var panel = CreateSectionPanel(_contentPanel, y, definitions.Count * 30 + 8);
+        y += panel.Height + 12;
+
+        var table = CreateFieldTable(panel, definitions.Count);
+        for (var i = 0; i < definitions.Count; i++)
+        {
+            var definition = definitions[i];
+            _computerFields.Add(new BoundField
+            {
+                Caption = table.Captions[i],
+                Value = table.Values[i],
+                GetLabel = definition.Label,
+                ApplyValue = data => definition.Apply(data, table.Values[i])
+            });
+        }
+    }
+
+    private void BuildUserSection(FeatureSettings features, ref int y)
+    {
+        var definitions = new List<(Func<string> Label, Action<SystemInfoData, TextBox> Apply)>();
+        if (features.ShowUserLogin)
+        {
+            definitions.Add((() => LocalizationManager.UserLoginLabel, (d, t) => t.Text = d.UserLogin));
+        }
+
+        if (features.ShowDisplayName)
+        {
+            definitions.Add((() => LocalizationManager.UserDisplayNameLabel, (d, t) => t.Text = d.UserDisplayName));
+        }
+
+        if (definitions.Count == 0)
+        {
+            return;
+        }
+
+        _userSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.UserDataSection, ref y);
+        var panel = CreateSectionPanel(_contentPanel, y, definitions.Count * 30 + 8);
+        y += panel.Height + 12;
+
+        var table = CreateFieldTable(panel, definitions.Count);
+        for (var i = 0; i < definitions.Count; i++)
+        {
+            var definition = definitions[i];
+            _userFields.Add(new BoundField
+            {
+                Caption = table.Captions[i],
+                Value = table.Values[i],
+                GetLabel = definition.Label,
+                ApplyValue = data => definition.Apply(data, table.Values[i])
+            });
+        }
+    }
+
+    private void BuildTeamViewerSection(FeatureSettings features, ref int y)
+    {
+        if (!features.ShowTeamViewerSection)
+        {
+            return;
+        }
+
+        _teamViewerSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.TeamViewerSection, ref y);
+        _teamViewerPanel = CreateSectionPanel(_contentPanel, y, 52);
+        y += 64;
+
+        var teamViewerTable = CreateFieldTable(_teamViewerPanel, 1);
+        _teamViewerStatusCaption = teamViewerTable.Captions[0];
+        _teamViewerStatusValue = teamViewerTable.Values[0];
+
+        if (features.AllowLaunchTeamViewer)
+        {
+            _launchTeamViewerButton = CreateAccentButton(
+                LocalizationManager.LaunchTeamViewerButton,
+                new Point(12, 34),
+                new Size(170, 28));
+            _launchTeamViewerButton.Visible = false;
+            _launchTeamViewerButton.Click += (_, _) => LaunchTeamViewer();
+            _teamViewerPanel.Controls.Add(_launchTeamViewerButton);
+        }
+    }
+
     private void ShowAboutDialog()
     {
         using var about = new AboutForm(this);
+        about.ApplyLanguage();
         about.ShowDialog(this);
+    }
+
+    private static void OpenWebsite(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            // Ignore browser launch failures.
+        }
     }
 
     private LinkLabel CreateLanguageLink(string text, int x) => new()
@@ -636,7 +781,7 @@ internal sealed class MainForm : Form
     {
         _copyButton.Enabled = enabled;
         _refreshButton.Enabled = enabled;
-        _reportButton.Enabled = enabled && !string.IsNullOrWhiteSpace(ConfigurationService.Current.Support.Email);
+        _reportButton.Enabled = enabled && !string.IsNullOrWhiteSpace(ConfigurationService.Current.Support.EmailTo);
         if (_launchTeamViewerButton is not null)
         {
             _launchTeamViewerButton.Enabled = enabled && _data.TeamViewerInstalled;
@@ -645,22 +790,20 @@ internal sealed class MainForm : Form
 
     private void UpdateValues()
     {
-        _computerNameValue.Text = _data.ComputerName;
-        _domainValue.Text = _data.Domain;
-        _osValue.Text = _data.OperatingSystem;
-        _ipValue.Text = _data.IpAddress;
-        _dnsValue.Text = _data.DnsServers;
-        _uptimeValue.Text = _data.Uptime;
-        _manufacturerValue.Text = _data.ManufacturerModel;
-        _biosValue.Text = _data.BiosSerial;
-        _machineTypeValue.Text = _data.MachineType;
-        _userLoginValue.Text = _data.UserLogin;
-        _userDisplayNameValue.Text = _data.UserDisplayName;
+        foreach (var field in _computerFields)
+        {
+            field.ApplyValue(_data);
+        }
 
-        if (ConfigurationService.Current.Features.ShowTeamViewer)
+        foreach (var field in _userFields)
+        {
+            field.ApplyValue(_data);
+        }
+
+        if (_teamViewerStatusValue is not null)
         {
             _teamViewerStatusValue.Text = LocalizationManager.GetTeamViewerStatus(_data.TeamViewerInstalled);
-            if (_launchTeamViewerButton is not null)
+            if (_launchTeamViewerButton is not null && _teamViewerPanel is not null)
             {
                 var showButton = ConfigurationService.Current.Features.AllowLaunchTeamViewer &&
                                  _data.TeamViewerInstalled &&
@@ -711,27 +854,44 @@ internal sealed class MainForm : Form
             {
                 _hotlineCaptionLabel.Text = LocalizationManager.HotlineLabel;
             }
+
+            if (_mobilePhoneCaptionLabel is not null)
+            {
+                _mobilePhoneCaptionLabel.Text = LocalizationManager.MobilePhoneLabel;
+            }
+
+            if (_websiteCaptionLabel is not null)
+            {
+                _websiteCaptionLabel.Text = LocalizationManager.WebsiteLabel;
+            }
         }
 
-        _computerSectionLabel.Text = LocalizationManager.ComputerDataSection;
-        _computerNameCaption.Text = LocalizationManager.ComputerNameLabel;
-        _domainCaption.Text = LocalizationManager.DomainLabel;
-        _osCaption.Text = LocalizationManager.OperatingSystemLabel;
-        _ipCaption.Text = LocalizationManager.IpAddressLabel;
-        _dnsCaption.Text = LocalizationManager.DnsLabel;
-        _uptimeCaption.Text = LocalizationManager.UptimeLabel;
-        _manufacturerCaption.Text = LocalizationManager.ManufacturerLabel;
-        _biosCaption.Text = LocalizationManager.BiosSerialLabel;
-        _machineTypeCaption.Text = LocalizationManager.MachineTypeLabel;
+        if (_computerSectionLabel is not null)
+        {
+            _computerSectionLabel.Text = LocalizationManager.ComputerDataSection;
+            foreach (var field in _computerFields)
+            {
+                field.Caption.Text = field.GetLabel();
+            }
+        }
 
-        _userSectionLabel.Text = LocalizationManager.UserDataSection;
-        _userLoginCaption.Text = LocalizationManager.UserLoginLabel;
-        _userDisplayNameCaption.Text = LocalizationManager.UserDisplayNameLabel;
+        if (_userSectionLabel is not null)
+        {
+            _userSectionLabel.Text = LocalizationManager.UserDataSection;
+            foreach (var field in _userFields)
+            {
+                field.Caption.Text = field.GetLabel();
+            }
+        }
 
         if (_teamViewerSectionLabel is not null)
         {
             _teamViewerSectionLabel.Text = LocalizationManager.TeamViewerSection;
-            _teamViewerStatusCaption.Text = LocalizationManager.TeamViewerStatusLabel;
+            if (_teamViewerStatusCaption is not null)
+            {
+                _teamViewerStatusCaption.Text = LocalizationManager.TeamViewerStatusLabel;
+            }
+
             if (_launchTeamViewerButton is not null)
             {
                 _launchTeamViewerButton.Text = LocalizationManager.LaunchTeamViewerButton;
@@ -742,12 +902,19 @@ internal sealed class MainForm : Form
         _refreshButton.Text = LocalizationManager.RefreshButton;
         _reportButton.Text = LocalizationManager.ReportButton;
         _closeButton.Text = LocalizationManager.CloseButton;
-        _polishLink.Text = LocalizationManager.LanguagePolish;
-        _englishLink.Text = LocalizationManager.LanguageEnglish;
+        if (_polishLink is not null)
+        {
+            _polishLink.Text = LocalizationManager.LanguagePolish;
+        }
+
+        if (_englishLink is not null)
+        {
+            _englishLink.Text = LocalizationManager.LanguageEnglish;
+        }
 
         HighlightActiveLanguage();
 
-        if (!_isLoading && ConfigurationService.Current.Features.ShowTeamViewer)
+        if (!_isLoading && _teamViewerStatusValue is not null)
         {
             _teamViewerStatusValue.Text = LocalizationManager.GetTeamViewerStatus(_data.TeamViewerInstalled);
         }
@@ -755,6 +922,11 @@ internal sealed class MainForm : Form
 
     private void HighlightActiveLanguage()
     {
+        if (_polishLink is null || _englishLink is null)
+        {
+            return;
+        }
+
         var active = AppTheme.AccentLight;
         var inactive = Color.White;
         _polishLink.LinkColor = LocalizationManager.CurrentLanguage == AppLanguage.Polish ? active : inactive;

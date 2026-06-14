@@ -1,28 +1,172 @@
 # Release process
 
-This document describes how to publish PC Inform releases for administrators and maintainers.
+This document describes how maintainers prepare, build, and publish PC Inform releases. End-user documentation is in the [README](../README.md). Developer context is in [DEVELOPER.md](DEVELOPER.md).
+
+## Overview
+
+A release consists of:
+
+1. Versioned application binaries built from this repository
+2. A GitHub Release with attached assets
+3. Optional hosted `version.json` for organizations that enable update checks in `appsettings.json`
+
+PC Inform does **not** auto-install updates. When update checking is enabled, the app only notifies the user and opens a download URL in the browser.
 
 ## Configuration vs release metadata
 
-PC Inform uses **two separate configuration layers**:
+Two separate files serve different roles:
 
-### 1. `appsettings.json` (deployment / administrator)
+### `appsettings.json` (on each end-user PC)
 
-Location on end-user machines:
+- **Location:** `C:\ProgramData\PCInform\appsettings.json`
+- **Audience:** IT administrators / deployment
+- **Purpose:** branding, contacts, feature flags, and whether/how to check for updates
+
+Relevant update settings:
+
+```json
+{
+  "features": {
+    "checkUpdates": false
+  },
+  "update": {
+    "enabled": false,
+    "versionUrl": ""
+  }
+}
+```
+
+Both `features.checkUpdates` and `update.enabled` must be `true`, and `update.versionUrl` must point to a valid URL, for the application to perform a check on startup.
+
+Public defaults in [appsettings.example.json](../appsettings.example.json) keep update checking **disabled**.
+
+### `version.json` (hosted remotely)
+
+- **Location:** URL chosen by the maintainer or organization (GitHub Release asset, static web server, etc.)
+- **Audience:** PC Inform instances configured with `update.versionUrl`
+- **Purpose:** advertise latest version, download link, optional release notes
+
+Example: [version.example.json](version.example.json)
+
+| Field | Purpose |
+|-------|---------|
+| `version` | Latest published version (semver string, compared to running app) |
+| `downloadUrl` | Browser download link (e.g. GitHub Release asset URL) |
+| `sha256` | Optional integrity hash (informational; app does not verify automatically) |
+| `mandatory` | Reserved for future use; not used for forced install |
+| `releaseNotesPl`, `releaseNotesEn` | Shown in the update dialog when a newer version exists |
+
+**Relationship:** `appsettings.json` controls *if* and *where* to look; `version.json` describes *what* is available. Organizations host or reference `version.json`; administrators set `update.versionUrl` in deployed `appsettings.json`.
+
+## Preparing a release
+
+1. **Finalize changes** on the release branch or `main` as per your process.
+2. **Set version** in `PCInform/PCInform.csproj` (assembly / informational version).
+3. **Update** `CHANGELOG.md` with release notes for `X.Y.Z`.
+4. **Verify** [appsettings.example.json](../appsettings.example.json) still reflects safe public defaults (TeamViewer, Atera, and update flags disabled).
+5. **Build and smoke-test** on Windows (see below).
+
+## Building release binaries
+
+### Application (self-contained single file)
+
+On Windows (PowerShell):
+
+```powershell
+dotnet publish PCInform\PCInform.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  /p:PublishSingleFile=true `
+  /p:PublishTrimmed=false `
+  /p:IncludeNativeLibrariesForSelfExtract=true `
+  /p:EnableCompressionInSingleFile=true
+```
+
+Output directory:
 
 ```
-%LOCALAPPDATA%\PCInform\appsettings.json
+PCInform\bin\Release\net8.0-windows\win-x64\publish\
 ```
 
-Purpose:
+Primary artifact: `PCInform.exe`
 
-- Branding (`application`, `support`)
-- Feature toggles (`features`)
-- **Update source configuration** (`update.enabled`, `update.versionUrl`, `features.checkUpdates`)
+### Installer
 
-This file is intended for **IT administrators** or deployment packaging — not for casual end-user editing.
+Requires [Inno Setup 6](https://jrsoftware.org/isinfo.php) on Windows:
 
-Example administrator settings for managed update checks:
+```powershell
+iscc installer\PCInform.iss
+```
+
+Output: `PCInform-Setup.exe` (in the installer output folder configured by Inno Setup).
+
+The installer:
+
+- Installs the app per-user to `%LOCALAPPDATA%\PCInform\`
+- Creates `%PROGRAMDATA%\PCInform\appsettings.json` **only if it does not exist**
+- Preserves existing global configuration on upgrade
+- Replaces the application executable
+
+### Do not commit binaries
+
+Never commit to git:
+
+- `PCInform.exe`
+- `PCInform-Setup.exe`
+- `bin/Release/.../publish/` contents
+
+Distribute these via GitHub Releases only.
+
+## Creating a GitHub Release
+
+1. Open the repository on GitHub: `https://github.com/TimeWizard007/pcinform`
+2. **Releases** → **Draft a new release**
+3. **Choose a tag:** create tag `vX.Y.Z` matching `PCInform.csproj` version (e.g. `v1.0.1`)
+4. **Release title:** `PC Inform vX.Y.Z`
+5. **Description:** copy relevant section from `CHANGELOG.md`
+6. **Attach assets:**
+   - **Required for most users:** `PCInform-Setup.exe`
+   - **Optional:** `PCInform.exe` (portable) or a ZIP containing it
+   - **Optional:** `version.json` for update-aware deployments
+7. Publish the release
+
+### Asset URLs
+
+After upload, GitHub provides stable download URLs, for example:
+
+```
+https://github.com/TimeWizard007/pcinform/releases/download/v1.0.1/PCInform-Setup.exe
+```
+
+Use this pattern in `version.json` → `downloadUrl`.
+
+## Maintaining `version.json`
+
+When you publish a release and want update-aware deployments to find it:
+
+1. Copy [version.example.json](version.example.json) as a starting point.
+2. Set `version` to the new release (e.g. `1.0.1`).
+3. Set `downloadUrl` to the GitHub Release asset URL for the installer.
+4. Optionally set `sha256` (hash of the installer file) and localized `releaseNotesPl` / `releaseNotesEn`.
+5. Host the file:
+   - **Option A:** Attach `version.json` to the GitHub Release and use that asset URL as `versionUrl`
+   - **Option B:** Publish to a static URL your organization controls (CDN, internal web server)
+
+Example for release `v1.0.1`:
+
+```json
+{
+  "version": "1.0.1",
+  "downloadUrl": "https://github.com/TimeWizard007/pcinform/releases/download/v1.0.1/PCInform-Setup.exe",
+  "sha256": "",
+  "mandatory": false,
+  "releaseNotesPl": "Poprawki i usprawnienia.",
+  "releaseNotesEn": "Fixes and improvements."
+}
+```
+
+Administrators enable checking in deployed `appsettings.json`:
 
 ```json
 {
@@ -31,90 +175,25 @@ Example administrator settings for managed update checks:
   },
   "update": {
     "enabled": true,
-    "versionUrl": "https://your-domain.example/pcinform/latest/version.json"
+    "versionUrl": "https://github.com/TimeWizard007/pcinform/releases/download/v1.0.1/version.json"
   }
 }
 ```
 
-Public repository defaults in [appsettings.example.json](../appsettings.example.json) keep updates and Atera detection **disabled** for safe out-of-the-box use.
+Update `versionUrl` when you move to a canonical “latest” URL, or repoint deployments when you publish each release.
 
-End users normally should **not** change update settings unless instructed by their IT team.
+## Post-release checklist
 
-### 2. `version.json` (release metadata)
+- [ ] Git tag `vX.Y.Z` matches assembly version
+- [ ] `CHANGELOG.md` updated
+- [ ] `PCInform-Setup.exe` attached to GitHub Release
+- [ ] Release notes visible on GitHub
+- [ ] `version.json` updated/hosted if update checks are used
+- [ ] No binaries committed to the source repository
 
-Hosted remotely (for example on GitHub Releases assets or a static web server).
+## What PC Inform does not do
 
-Purpose:
-
-- Advertise the latest published version
-- Provide download URL for the installer
-- Optional release notes (PL/EN)
-
-Example: [docs/version.example.json](version.example.json)
-
-The application compares `version.json` against the running assembly version on startup **only when enabled in `appsettings.json`**.
-
-## GitHub Releases workflow
-
-### Build artifacts (do not commit to source tree)
-
-Never commit compiled binaries to the repository:
-
-- `PCInform.exe`
-- `PCInform-Setup.exe`
-- publish output folders
-
-These belong on **GitHub Releases**, not in git history.
-
-### Recommended release steps
-
-1. Update version in `PCInform/PCInform.csproj`.
-2. Update `CHANGELOG.md`.
-3. Publish the application:
-
-   ```powershell
-   dotnet publish PCInform\PCInform.csproj `
-     -c Release `
-     -r win-x64 `
-     --self-contained true `
-     /p:PublishSingleFile=true `
-     /p:PublishTrimmed=false `
-     /p:IncludeNativeLibrariesForSelfExtract=true `
-     /p:EnableCompressionInSingleFile=true
-   ```
-
-4. Build the installer:
-
-   ```powershell
-   iscc installer\PCInform.iss
-   ```
-
-5. Create a GitHub Release tagged `vX.Y.Z`.
-
-6. Attach release assets:
-
-   - `PCInform-Setup.exe` (recommended for end users)
-   - Optional: `PCInform.exe` ZIP for portable use
-   - `version.json` pointing to the release download URL
-
-7. Host or update `version.json` so `update.versionUrl` in deployed `appsettings.json` references the current release metadata.
-
-### `version.json` download URL
-
-Point `downloadUrl` to the GitHub Release asset, for example:
-
-```
-https://github.com/TimeWizard007/pcinform/releases/download/v1.0.1/PCInform-Setup.exe
-```
-
-The application opens this URL in the browser when the user accepts an update — it does **not** auto-install.
-
-## Installer upgrades
-
-The Inno Setup script:
-
-- Installs per-user to `%LOCALAPPDATA%\PCInform\`
-- Preserves existing `appsettings.json` if present
-- Replaces the application executable
-
-Administrators can preconfigure `appsettings.json` before distributing the installer or via deployment tooling.
+- No automatic download or install of updates
+- No background updater or launcher
+- No SMTP or server-side email
+- Update failure never blocks application startup
