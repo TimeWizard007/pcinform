@@ -18,7 +18,7 @@ internal sealed class AboutForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(520, 300);
+        ClientSize = new Size(560, 340);
         BackColor = AppTheme.Background;
         Font = new Font("Segoe UI", 9F);
         ShowInTaskbar = false;
@@ -28,8 +28,8 @@ internal sealed class AboutForm : Form
             Icon = ownerForm.Icon;
         }
 
-        const int left = 24;
-        const int contentWidth = 472;
+        const int left = 28;
+        const int contentWidth = 504;
 
         var titleLabel = new Label
         {
@@ -37,22 +37,22 @@ internal sealed class AboutForm : Form
             Font = new Font("Segoe UI", 14F, FontStyle.Bold),
             ForeColor = AppTheme.BannerBlue,
             AutoSize = true,
-            Location = new Point(left, 20)
+            Location = new Point(left, 24)
         };
 
         _versionLabel = new Label
         {
             Text = $"{LocalizationManager.AboutVersionLabel} v{AppInfoService.Version}",
             AutoSize = true,
-            Location = new Point(left, 52),
+            Location = new Point(left, 56),
             ForeColor = AppTheme.ValueText
         };
 
         _descriptionLabel = new Label
         {
             Text = LocalizationManager.AboutDescription,
-            Location = new Point(left, 84),
-            Size = new Size(contentWidth, 56),
+            Location = new Point(left, 88),
+            Size = new Size(contentWidth, 48),
             ForeColor = AppTheme.LabelText
         };
 
@@ -76,7 +76,7 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutGitHubLabel,
             AutoSize = true,
-            Location = new Point(left, 180),
+            Location = new Point(left, 184),
             ForeColor = AppTheme.LabelText
         };
 
@@ -84,7 +84,7 @@ internal sealed class AboutForm : Form
         {
             Text = LocalizationManager.AboutGitHubUrl,
             AutoSize = true,
-            Location = new Point(left, 202),
+            Location = new Point(left + 56, 184),
             LinkColor = AppTheme.BannerBlue,
             ActiveLinkColor = AppTheme.Accent,
             VisitedLinkColor = AppTheme.BannerBlue,
@@ -97,7 +97,7 @@ internal sealed class AboutForm : Form
             Text = LocalizationManager.CloseButton,
             DialogResult = DialogResult.OK,
             Size = new Size(90, 30),
-            Location = new Point(406, 252),
+            Location = new Point(442, 288),
             FlatStyle = FlatStyle.Flat,
             BackColor = AppTheme.BannerBlue,
             ForeColor = Color.White

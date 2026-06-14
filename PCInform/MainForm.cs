@@ -64,6 +64,11 @@ internal sealed class MainForm : Form
     private Button _reportButton = null!;
     private Button _closeButton = null!;
 
+    private const int TableRowHeight = 36;
+    private const int TablePanelExtraHeight = 20;
+    private const int ContactRowHeight = 32;
+    private const int ContactPanelExtraHeight = 26;
+
     private TextBox[] _dataValueBoxes = [];
 
     public MainForm()
@@ -326,7 +331,7 @@ internal sealed class MainForm : Form
             (VisibilityHelper.IsWebsiteVisible(support) ? 1 : 0);
 
         _contactSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.ContactSection, ref y);
-        _contactPanel = CreateSectionPanel(_contentPanel, y, rowCount * 28 + 16);
+        _contactPanel = CreateSectionPanel(_contentPanel, y, rowCount * ContactRowHeight + ContactPanelExtraHeight);
         y += _contactPanel.Height + 12;
 
         var rowY = 14;
@@ -348,7 +353,7 @@ internal sealed class MainForm : Form
             _emailLink.Click += (_, _) => TryOpenEmail(MailHelper.TryOpenHelpdeskEmail);
             _contactPanel.Controls.Add(_emailCaptionLabel);
             _contactPanel.Controls.Add(_emailLink);
-            rowY += 28;
+            rowY += ContactRowHeight;
         }
 
         if (VisibilityHelper.IsPhoneVisible(support))
@@ -365,7 +370,7 @@ internal sealed class MainForm : Form
             };
             _contactPanel.Controls.Add(_hotlineCaptionLabel);
             _contactPanel.Controls.Add(_hotlineValueLabel);
-            rowY += 28;
+            rowY += ContactRowHeight;
         }
 
         if (VisibilityHelper.IsMobilePhoneVisible(support))
@@ -382,7 +387,7 @@ internal sealed class MainForm : Form
             };
             _contactPanel.Controls.Add(_mobilePhoneCaptionLabel);
             _contactPanel.Controls.Add(_mobilePhoneValueLabel);
-            rowY += 28;
+            rowY += ContactRowHeight;
         }
 
         if (VisibilityHelper.IsWebsiteVisible(support))
@@ -391,7 +396,7 @@ internal sealed class MainForm : Form
             _websiteCaptionLabel.Location = new Point(12, rowY);
             _websiteLink = new LinkLabel
             {
-                Text = support.WebsiteUrl,
+                Text = FormatWebsiteDisplay(support.WebsiteUrl),
                 AutoSize = true,
                 Location = new Point(88, rowY),
                 Font = _valueFont,
@@ -460,7 +465,7 @@ internal sealed class MainForm : Form
         }
 
         _computerSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.ComputerDataSection, ref y);
-        var panel = CreateSectionPanel(_contentPanel, y, definitions.Count * 30 + 8);
+        var panel = CreateSectionPanel(_contentPanel, y, GetTablePanelHeight(definitions.Count));
         y += panel.Height + 12;
 
         var table = CreateFieldTable(panel, definitions.Count);
@@ -497,7 +502,7 @@ internal sealed class MainForm : Form
         }
 
         _userSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.UserDataSection, ref y);
-        var panel = CreateSectionPanel(_contentPanel, y, definitions.Count * 30 + 8);
+        var panel = CreateSectionPanel(_contentPanel, y, GetTablePanelHeight(definitions.Count));
         y += panel.Height + 12;
 
         var table = CreateFieldTable(panel, definitions.Count);
@@ -523,8 +528,14 @@ internal sealed class MainForm : Form
         }
 
         _teamViewerSectionLabel = AddSectionHeader(_contentPanel, LocalizationManager.TeamViewerSection, ref y);
-        _teamViewerPanel = CreateSectionPanel(_contentPanel, y, 52);
-        y += 64;
+        var teamViewerPanelHeight = GetTablePanelHeight(1);
+        if (features.AllowLaunchTeamViewer)
+        {
+            teamViewerPanelHeight += 36;
+        }
+
+        _teamViewerPanel = CreateSectionPanel(_contentPanel, y, teamViewerPanelHeight);
+        y += _teamViewerPanel.Height + 12;
 
         var teamViewerTable = CreateFieldTable(_teamViewerPanel, 1);
         _teamViewerStatusCaption = teamViewerTable.Captions[0];
@@ -534,7 +545,7 @@ internal sealed class MainForm : Form
         {
             _launchTeamViewerButton = CreateAccentButton(
                 LocalizationManager.LaunchTeamViewerButton,
-                new Point(12, 34),
+                new Point(12, TableRowHeight + 8),
                 new Size(170, 28));
             _launchTeamViewerButton.Visible = false;
             _launchTeamViewerButton.Click += (_, _) => LaunchTeamViewer();
@@ -547,6 +558,29 @@ internal sealed class MainForm : Form
         using var about = new AboutForm(this);
         about.ApplyLanguage();
         about.ShowDialog(this);
+    }
+
+    private static int GetTablePanelHeight(int rowCount) =>
+        rowCount * TableRowHeight + TablePanelExtraHeight;
+
+    private static string FormatWebsiteDisplay(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return url;
+        }
+
+        var display = url.Trim();
+        if (display.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            display = display[8..];
+        }
+        else if (display.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            display = display[7..];
+        }
+
+        return display.TrimEnd('/');
     }
 
     private static void OpenWebsite(string url)
@@ -640,7 +674,7 @@ internal sealed class MainForm : Form
 
         for (var i = 0; i < rowCount; i++)
         {
-            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, TableRowHeight));
             captions[i] = new Label
             {
                 AutoSize = false,
@@ -848,7 +882,9 @@ internal sealed class MainForm : Form
                                  _data.TeamViewerInstalled &&
                                  !string.IsNullOrEmpty(_data.TeamViewerPath);
                 _launchTeamViewerButton.Visible = showButton;
-                _teamViewerPanel.Height = showButton ? 88 : 52;
+                _teamViewerPanel.Height = showButton
+                    ? GetTablePanelHeight(1) + 36
+                    : GetTablePanelHeight(1);
             }
         }
     }
