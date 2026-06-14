@@ -4,7 +4,7 @@ using PCInform.Models;
 
 namespace PCInform.Configuration;
 
-internal static class ConfigurationService
+public static class ConfigurationService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -22,44 +22,113 @@ internal static class ConfigurationService
 
     public static AppSettings LoadSettings()
     {
-        AppSettings settings;
-
         if (File.Exists(AppPaths.ConfigFilePath))
         {
-            settings = TryLoadFromFile(AppPaths.ConfigFilePath) ?? CreateDefaultSettings();
-        }
-        else
-        {
-            settings = CreateDefaultSettings();
-            TrySaveSettings(settings, AppPaths.ConfigFilePath);
+            return LoadFromFile(AppPaths.ConfigFilePath) ?? CreateDefaultSettings();
         }
 
-        return MergeWithDefaults(settings);
+        var defaults = CreateDefaultSettings();
+        TrySaveSettings(defaults, AppPaths.ConfigFilePath);
+        return defaults;
     }
 
-    private static AppSettings? TryLoadFromFile(string path)
+    public static AppSettings LoadFromFile(string path)
     {
         try
         {
             if (!File.Exists(path))
             {
-                return null;
+                return CreateDefaultSettings();
             }
 
             var json = File.ReadAllText(path);
-            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
-            if (settings is not null)
-            {
-                ApplyLegacySupportFields(json, settings);
-            }
-
-            return settings;
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? CreateDefaultSettings();
+            ApplyLegacySupportFields(json, settings);
+            return MergeWithDefaults(settings);
         }
         catch
         {
-            return null;
+            return CreateDefaultSettings();
         }
     }
+
+    public static void SaveToFile(string path, AppSettings settings)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var merged = MergeWithDefaults(CloneSettings(settings));
+        var json = JsonSerializer.Serialize(merged, JsonOptions);
+        File.WriteAllText(path, json);
+    }
+
+    private static void TrySaveSettings(AppSettings settings, string path)
+    {
+        try
+        {
+            SaveToFile(path, settings);
+        }
+        catch
+        {
+            // Ignore config write failures (e.g. insufficient permissions).
+        }
+    }
+
+    private static AppSettings CloneSettings(AppSettings settings) => new()
+    {
+        Application = new ApplicationSettings
+        {
+            Name = settings.Application.Name,
+            WindowTitle = settings.Application.WindowTitle,
+            BannerText = settings.Application.BannerText,
+            DefaultLanguage = settings.Application.DefaultLanguage,
+            AccentColor = settings.Application.AccentColor,
+            WebsiteUrl = settings.Application.WebsiteUrl,
+            EnablePolish = settings.Application.EnablePolish,
+            EnableEnglish = settings.Application.EnableEnglish
+        },
+        Support = new SupportSettings
+        {
+            CompanyName = settings.Support.CompanyName,
+            EmailTo = settings.Support.EmailTo,
+            EmailCc = settings.Support.EmailCc,
+            EmailBcc = settings.Support.EmailBcc,
+            EmailSubjectPrefixPl = settings.Support.EmailSubjectPrefixPl,
+            EmailSubjectPrefixEn = settings.Support.EmailSubjectPrefixEn,
+            Phone = settings.Support.Phone,
+            MobilePhone = settings.Support.MobilePhone,
+            WebsiteUrl = settings.Support.WebsiteUrl,
+            ShowCompanyName = settings.Support.ShowCompanyName,
+            ShowEmail = settings.Support.ShowEmail,
+            ShowPhone = settings.Support.ShowPhone,
+            ShowMobilePhone = settings.Support.ShowMobilePhone,
+            ShowWebsite = settings.Support.ShowWebsite
+        },
+        Features = new FeatureSettings
+        {
+            ShowComputerName = settings.Features.ShowComputerName,
+            ShowDomain = settings.Features.ShowDomain,
+            ShowOperatingSystem = settings.Features.ShowOperatingSystem,
+            ShowIpAddress = settings.Features.ShowIpAddress,
+            ShowDnsServers = settings.Features.ShowDnsServers,
+            ShowUptime = settings.Features.ShowUptime,
+            ShowManufacturerModel = settings.Features.ShowManufacturerModel,
+            ShowSerialNumber = settings.Features.ShowSerialNumber,
+            ShowDeviceType = settings.Features.ShowDeviceType,
+            ShowUserLogin = settings.Features.ShowUserLogin,
+            ShowDisplayName = settings.Features.ShowDisplayName,
+            ShowTeamViewerSection = settings.Features.ShowTeamViewerSection,
+            ShowTeamViewer = settings.Features.ShowTeamViewer,
+            AllowLaunchTeamViewer = settings.Features.AllowLaunchTeamViewer,
+            DetectAtera = settings.Features.DetectAtera,
+            ShowAteraInGui = settings.Features.ShowAteraInGui,
+            IncludeAteraInReports = settings.Features.IncludeAteraInReports,
+            CheckUpdates = settings.Features.CheckUpdates
+        },
+        Update = new UpdateSettings
+        {
+            Enabled = settings.Update.Enabled,
+            VersionUrl = settings.Update.VersionUrl
+        }
+    };
 
     private static void ApplyLegacySupportFields(string json, AppSettings settings)
     {
@@ -83,21 +152,7 @@ internal static class ConfigurationService
         }
     }
 
-    private static void TrySaveSettings(AppSettings settings, string path)
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            var json = JsonSerializer.Serialize(settings, JsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch
-        {
-            // Ignore config write failures (e.g. insufficient permissions).
-        }
-    }
-
-    private static AppSettings MergeWithDefaults(AppSettings settings)
+    public static AppSettings MergeWithDefaults(AppSettings settings)
     {
         var defaults = CreateDefaultSettings();
 
@@ -112,7 +167,6 @@ internal static class ConfigurationService
         settings.Application.DefaultLanguage = NullIfWhiteSpace(settings.Application.DefaultLanguage) ?? defaults.Application.DefaultLanguage;
         settings.Application.AccentColor = NullIfWhiteSpace(settings.Application.AccentColor) ?? defaults.Application.AccentColor;
         settings.Application.WebsiteUrl = settings.Application.WebsiteUrl?.Trim() ?? defaults.Application.WebsiteUrl;
-        NormalizeLanguageSettings(settings.Application);
 
         settings.Support.CompanyName = NullIfWhiteSpace(settings.Support.CompanyName) ?? defaults.Support.CompanyName;
         settings.Support.EmailTo = settings.Support.EmailTo?.Trim() ?? defaults.Support.EmailTo;
@@ -127,15 +181,6 @@ internal static class ConfigurationService
         settings.Update.VersionUrl = settings.Update.VersionUrl?.Trim() ?? defaults.Update.VersionUrl;
 
         return settings;
-    }
-
-    private static void NormalizeLanguageSettings(ApplicationSettings application)
-    {
-        if (!application.EnablePolish && !application.EnableEnglish)
-        {
-            application.EnablePolish = true;
-            application.EnableEnglish = false;
-        }
     }
 
     private static string? NullIfWhiteSpace(string? value) =>

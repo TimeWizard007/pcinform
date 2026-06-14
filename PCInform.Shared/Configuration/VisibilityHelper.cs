@@ -2,7 +2,7 @@ using PCInform.Models;
 
 namespace PCInform.Configuration;
 
-internal static class VisibilityHelper
+public static class VisibilityHelper
 {
     public static bool IsEmailVisible(SupportSettings support) =>
         support.ShowEmail && !string.IsNullOrWhiteSpace(support.EmailTo);

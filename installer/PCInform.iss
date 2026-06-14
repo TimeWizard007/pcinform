@@ -1,8 +1,10 @@
-; PC Inform — per-user installer (no admin required)
-; Build the app first, then compile this script with Inno Setup 6.
+; PC Inform — per-machine installer (administrator required)
+; Build both executables first, then compile this script with Inno Setup 6.
+; Optional: place appsettings.json next to PCInform-Setup.exe to seed global config on first install.
 
 #define AppName "PC Inform"
 #define AppExe "PCInform.exe"
+#define ConfiguratorExe "PCInform.Configurator.exe"
 #define PublishDir "..\PCInform\bin\Release\net8.0-windows\win-x64\publish"
 #define ExampleConfig "..\appsettings.example.json"
 
@@ -12,10 +14,10 @@ AppName={#AppName}
 AppVersion=1.1.0
 AppVerName=PC Inform v1.1.0-dev
 AppPublisher=pcinform
-DefaultDirName={localappdata}\PCInform
+DefaultDirName={autopf}\PCInform
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
-PrivilegesRequired=lowest
+PrivilegesRequired=admin
 OutputBaseFilename=PCInform-Setup
 Compression=lzma2
 SolidCompression=yes
@@ -34,12 +36,15 @@ Name: "{commonappdata}\PCInform"; Permissions: users-modify
 
 [Files]
 Source: "{#PublishDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#PublishDir}\{#ConfiguratorExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "appsettings.json"
+Source: "{src}\appsettings.json"; DestDir: "{commonappdata}\PCInform"; DestName: "appsettings.json"; Flags: onlyifdoesntexist external skipifsourcedoesntexist
 Source: "{#ExampleConfig}"; DestDir: "{commonappdata}\PCInform"; DestName: "appsettings.json"; Flags: onlyifdoesntexist
 
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"
-Name: "{userdesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
+Name: "{commonprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
+Name: "{commonprograms}\PC Inform Configurator"; Filename: "{app}\{#ConfiguratorExe}"
+Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent

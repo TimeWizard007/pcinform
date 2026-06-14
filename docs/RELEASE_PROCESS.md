@@ -68,11 +68,15 @@ Example: [version.example.json](version.example.json)
 
 ## Building release binaries
 
-### Application (self-contained single file)
+Publish **both** executables to the same folder before building the installer.
+
+### Application and configurator (self-contained single file)
 
 On Windows (PowerShell):
 
 ```powershell
+$publishDir = "PCInform\bin\Release\net8.0-windows\win-x64\publish"
+
 dotnet publish PCInform\PCInform.csproj `
   -c Release `
   -r win-x64 `
@@ -80,7 +84,18 @@ dotnet publish PCInform\PCInform.csproj `
   /p:PublishSingleFile=true `
   /p:PublishTrimmed=false `
   /p:IncludeNativeLibrariesForSelfExtract=true `
-  /p:EnableCompressionInSingleFile=true
+  /p:EnableCompressionInSingleFile=true `
+  -o $publishDir
+
+dotnet publish PCInform.Configurator\PCInform.Configurator.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  /p:PublishSingleFile=true `
+  /p:PublishTrimmed=false `
+  /p:IncludeNativeLibrariesForSelfExtract=true `
+  /p:EnableCompressionInSingleFile=true `
+  -o $publishDir
 ```
 
 Output directory:
@@ -89,7 +104,10 @@ Output directory:
 PCInform\bin\Release\net8.0-windows\win-x64\publish\
 ```
 
-Primary artifact: `PCInform.exe`
+Primary artifacts:
+
+- `PCInform.exe` — end-user application
+- `PCInform.Configurator.exe` — administrator configuration editor
 
 ### Installer
 
@@ -103,8 +121,15 @@ Output: `PCInform-Setup.exe` (in the installer output folder configured by Inno 
 
 The installer:
 
-- Installs the app per-user to `%LOCALAPPDATA%\PCInform\`
-- Creates `%PROGRAMDATA%\PCInform\appsettings.json` **only if it does not exist**
+- Installs for all users to `C:\Program Files\PCInform\` (`{autopf}\PCInform`)
+- Requires administrator privileges
+- Installs `PCInform.exe` and `PCInform.Configurator.exe`
+- Adds all-users Start Menu shortcuts for **PC Inform** and **PC Inform Configurator**
+- Optional all-users desktop shortcut for **PC Inform** only (no configurator desktop shortcut)
+- Seeds `C:\ProgramData\PCInform\appsettings.json` **only if it does not exist**:
+  - from `appsettings.json` next to the setup executable, if present
+  - otherwise from `appsettings.example.json`
+- Never overwrites existing `C:\ProgramData\PCInform\appsettings.json` during upgrade
 - Preserves existing global configuration on upgrade
 - Replaces the application executable
 

@@ -18,7 +18,8 @@ Polish and English UI are supported. Branding, contact details, visible fields, 
 ## Requirements
 
 - Windows 10 or 11 (64-bit)
-- Standard user account (no administrator rights required to run PC Inform)
+- Standard user account to **run** PC Inform (no admin required at runtime)
+- Administrator rights to **install** or upgrade via the setup package
 - A mail client for **Report problem** (for example Outlook or any application registered for `mailto:`)
 
 ## Installation
@@ -26,10 +27,11 @@ Polish and English UI are supported. Branding, contact details, visible fields, 
 ### Installer (recommended)
 
 1. Download **PCInform-Setup.exe** from [GitHub Releases](https://github.com/TimeWizard007/pcinform/releases).
-2. Run the installer. Administrator rights are not required for the application install.
-3. PC Inform is installed per user under `%LOCALAPPDATA%\PCInform\`.
-4. On first install, the installer creates a default configuration at `C:\ProgramData\PCInform\appsettings.json` if that file does not already exist.
-5. Existing configuration is **never overwritten** during upgrade.
+2. Run the installer **as administrator**.
+3. PC Inform is installed for all users under `C:\Program Files\PCInform\`.
+4. On first install, the installer creates `C:\ProgramData\PCInform\appsettings.json` if that file does not already exist (from `appsettings.example.json`, or from `appsettings.json` placed next to the installer).
+5. Existing global configuration is **never overwritten** during upgrade.
+6. Optionally create an all-users desktop shortcut during setup (Start Menu shortcuts are always created).
 
 ### Portable use
 
@@ -54,6 +56,14 @@ On first run, if the global file is missing, PC Inform creates the folder and a 
 Per-user **language preference** only is stored at `%APPDATA%\PCInform\settings.json`.
 
 See [appsettings.example.json](appsettings.example.json) for a full example.
+
+### PC Inform Configurator (administrators)
+
+**PCInform.Configurator.exe** is a separate administrator tool installed with PC Inform (Start Menu shortcut: **PC Inform Configurator**). It is not part of the end-user application.
+
+Use it to create or edit `C:\ProgramData\PCInform\appsettings.json` with a tabbed editor for Application, Support, Features, and Update settings. The configurator validates settings before saving (for example at least one language enabled, and `versionUrl` when updates are enabled).
+
+End users normally do not need the configurator — IT administrators prepare the machine-wide configuration before or after deployment.
 
 ### JSON sections overview
 
