@@ -206,6 +206,17 @@ internal static class LocalizationManager
     public static string AboutGitHubLabel =>
         CurrentLanguage == AppLanguage.Polish ? "Projekt:" : "Project:";
 
+    public static string AboutLicenseLabel =>
+        CurrentLanguage == AppLanguage.Polish ? "Licencja:" : "License:";
+
+    public static string AboutLicenseName => "MIT License";
+
+    public static string AboutLicenseNote => CurrentLanguage == AppLanguage.Polish
+        ? "Bezpłatna do użytku prywatnego i komercyjnego."
+        : "Free for personal and commercial use.";
+
+    public static string AboutGitHubButton => "GitHub";
+
     public const string AboutAuthorName = "Michał Watkowski";
 
     public const string AboutGitHubUrl = "https://github.com/TimeWizard007/pcinform";
