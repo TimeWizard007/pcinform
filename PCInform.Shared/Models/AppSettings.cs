@@ -5,6 +5,7 @@ public sealed class AppSettings
     public ApplicationSettings Application { get; set; } = new();
     public SupportSettings Support { get; set; } = new();
     public FeatureSettings Features { get; set; } = new();
+    public ReportSettings Report { get; set; } = new();
     public UpdateSettings Update { get; set; } = new();
 }
 
@@ -58,6 +59,23 @@ public sealed class FeatureSettings
     public bool ShowAteraInGui { get; set; }
     public bool IncludeAteraInReports { get; set; }
     public bool CheckUpdates { get; set; }
+}
+
+public sealed class ReportSettings
+{
+    public bool IncludeComputerName { get; set; } = true;
+    public bool IncludeDomain { get; set; } = true;
+    public bool IncludeOperatingSystem { get; set; } = true;
+    public bool IncludeIpAddress { get; set; } = true;
+    public bool IncludeDnsServers { get; set; } = true;
+    public bool IncludeUptime { get; set; } = true;
+    public bool IncludeManufacturerModel { get; set; } = true;
+    public bool IncludeSerialNumber { get; set; } = true;
+    public bool IncludeDeviceType { get; set; } = true;
+    public bool IncludeUserLogin { get; set; } = true;
+    public bool IncludeDisplayName { get; set; } = true;
+    public bool IncludeTeamViewer { get; set; }
+    public bool IncludeAtera { get; set; }
 }
 
 public sealed class UpdateSettings

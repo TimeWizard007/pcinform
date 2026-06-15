@@ -3,7 +3,8 @@ using System.Management;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Security.Principal;
+using System.Runtime.InteropServices;
+using System.Text;
 using PCInform.Localization;
 using PCInform.Models;
 
@@ -324,47 +325,98 @@ internal static class SystemInfoService
 
     private static string GetUserDisplayName()
     {
-        var displayName = GetUserDisplayNameFromWmi();
-        if (!string.IsNullOrWhiteSpace(displayName))
+        var username = Environment.UserName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(username))
         {
-            return displayName;
+            return string.Empty;
         }
 
-        return OperatingSystem.IsWindows() ? GetUserDisplayNameFromIdentity() : string.Empty;
-    }
+        var machineName = Environment.MachineName;
+        var userDomain = Environment.UserDomainName;
+        var isLocalSession = string.IsNullOrWhiteSpace(userDomain) ||
+                             userDomain.Equals(machineName, StringComparison.OrdinalIgnoreCase);
 
-    private static string GetUserDisplayNameFromWmi()
-    {
-        var userName = Environment.UserName.Replace("'", "''");
-        using var searcher = new ManagementObjectSearcher(
-            $"SELECT FullName FROM Win32_UserAccount WHERE Name='{userName}' AND FullName IS NOT NULL");
-
-        foreach (ManagementObject item in searcher.Get())
+        var localFullName = GetWin32UserAccountFullName(username, machineName, localOnly: true);
+        if (IsReliableDisplayName(localFullName, username))
         {
-            var fullName = item["FullName"]?.ToString()?.Trim();
-            if (!string.IsNullOrWhiteSpace(fullName))
+            return localFullName;
+        }
+
+        if (!isLocalSession)
+        {
+            var domainFullName = GetWin32UserAccountFullName(username, userDomain, localOnly: false);
+            if (IsReliableDisplayName(domainFullName, username))
             {
-                return fullName;
+                return domainFullName;
+            }
+
+            var profileDisplayName = GetUserNameExDisplayName();
+            if (IsReliableDisplayName(profileDisplayName, username))
+            {
+                return profileDisplayName;
+            }
+        }
+        else
+        {
+            var profileDisplayName = GetUserNameExDisplayName();
+            if (IsReliableDisplayName(profileDisplayName, username))
+            {
+                return profileDisplayName;
+            }
+
+            var localAccountFullName = GetWin32UserAccountFullName(username, machineName, localOnly: false);
+            if (IsReliableDisplayName(localAccountFullName, username))
+            {
+                return localAccountFullName;
             }
         }
 
-        return string.Empty;
+        return username;
     }
 
-    private static string GetUserDisplayNameFromIdentity()
+    private static bool IsReliableDisplayName(string? value, string username)
     {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.Contains('\\', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (trimmed.Equals(username, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (trimmed.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals(Environment.MachineName, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (trimmed.Length < 2)
+        {
+            return false;
+        }
+
+        return trimmed.Any(char.IsLetter);
+    }
+
+    private static string GetWin32UserAccountFullName(string username, string domain, bool localOnly)
+    {
+        var escapedUser = username.Replace("'", "''");
+        var escapedDomain = domain.Replace("'", "''");
+        var query = localOnly
+            ? $"SELECT FullName FROM Win32_UserAccount WHERE Name='{escapedUser}' AND (LocalAccount=True OR Domain='{escapedDomain}')"
+            : $"SELECT FullName FROM Win32_UserAccount WHERE Name='{escapedUser}' AND Domain='{escapedDomain}'";
+
         try
         {
-            using var identity = WindowsIdentity.GetCurrent();
-            var parts = identity.Name?.Split('\\');
-            if (parts?.Length != 2)
-            {
-                return string.Empty;
-            }
-
-            using var searcher = new ManagementObjectSearcher(
-                $"SELECT FullName FROM Win32_UserAccount WHERE Name='{parts[1].Replace("'", "''")}'");
-
+            using var searcher = new ManagementObjectSearcher(query);
             foreach (ManagementObject item in searcher.Get())
             {
                 var fullName = item["FullName"]?.ToString()?.Trim();
@@ -376,7 +428,42 @@ internal static class SystemInfoService
         }
         catch
         {
-            // Ignore identity lookup failures.
+            // Ignore WMI lookup failures.
+        }
+
+        return string.Empty;
+    }
+
+    private const int NameDisplay = 3;
+
+    [DllImport("secur32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool GetUserNameEx(int nameFormat, StringBuilder userName, ref int userNameSize);
+
+    private static string GetUserNameExDisplayName()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            var size = 256;
+            var builder = new StringBuilder(size);
+            if (GetUserNameEx(NameDisplay, builder, ref size))
+            {
+                return builder.ToString().Trim();
+            }
+
+            builder = new StringBuilder(size);
+            if (GetUserNameEx(NameDisplay, builder, ref size))
+            {
+                return builder.ToString().Trim();
+            }
+        }
+        catch
+        {
+            // Ignore profile display name lookup failures.
         }
 
         return string.Empty;

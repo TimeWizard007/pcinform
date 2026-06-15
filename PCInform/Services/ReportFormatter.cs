@@ -139,8 +139,8 @@ internal static class ReportFormatter
         AppLanguage language,
         bool inline = false)
     {
-        var features = ConfigurationService.Current.Features;
-        var lines = BuildComputerLines(data, features, language);
+        var report = ConfigurationService.Current.Report;
+        var lines = BuildComputerLines(data, report, language);
         if (lines.Count == 0)
         {
             return;
@@ -159,51 +159,51 @@ internal static class ReportFormatter
         sections.Add(string.Join('\n', lines));
     }
 
-    private static List<string> BuildComputerLines(SystemInfoData data, FeatureSettings features, AppLanguage language)
+    private static List<string> BuildComputerLines(SystemInfoData data, ReportSettings report, AppLanguage language)
     {
         var lines = new List<string>();
 
-        if (features.ShowComputerName)
+        if (report.IncludeComputerName)
         {
             lines.Add($"{LocalizationManager.ComputerNameLabel} {data.ComputerName}");
         }
 
-        if (features.ShowDomain)
+        if (report.IncludeDomain)
         {
             lines.Add($"{LocalizationManager.DomainLabel} {data.Domain}");
         }
 
-        if (features.ShowOperatingSystem)
+        if (report.IncludeOperatingSystem)
         {
             lines.Add($"{LocalizationManager.OperatingSystemLabel} {data.OperatingSystem}");
         }
 
-        if (features.ShowIpAddress)
+        if (report.IncludeIpAddress)
         {
             lines.Add($"{LocalizationManager.IpAddressLabel} {data.IpAddress}");
         }
 
-        if (features.ShowDnsServers)
+        if (report.IncludeDnsServers)
         {
             lines.Add($"{LocalizationManager.DnsLabel} {data.DnsServers}");
         }
 
-        if (features.ShowUptime)
+        if (report.IncludeUptime)
         {
             lines.Add($"{LocalizationManager.UptimeLabel} {data.Uptime}");
         }
 
-        if (features.ShowManufacturerModel)
+        if (report.IncludeManufacturerModel)
         {
             lines.Add($"{LocalizationManager.ManufacturerLabel} {data.ManufacturerModel}");
         }
 
-        if (features.ShowSerialNumber)
+        if (report.IncludeSerialNumber)
         {
             lines.Add($"{LocalizationManager.BiosSerialLabel} {data.BiosSerial}");
         }
 
-        if (features.ShowDeviceType)
+        if (report.IncludeDeviceType)
         {
             lines.Add($"{LocalizationManager.MachineTypeLabel} {data.MachineType}");
         }
@@ -217,8 +217,8 @@ internal static class ReportFormatter
         AppLanguage language,
         bool inline = false)
     {
-        var features = ConfigurationService.Current.Features;
-        var lines = BuildUserLines(data, features, language);
+        var report = ConfigurationService.Current.Report;
+        var lines = BuildUserLines(data, report, language);
         if (lines.Count == 0)
         {
             return;
@@ -236,18 +236,18 @@ internal static class ReportFormatter
         sections.Add(string.Join('\n', lines));
     }
 
-    private static List<string> BuildUserLines(SystemInfoData data, FeatureSettings features, AppLanguage language)
+    private static List<string> BuildUserLines(SystemInfoData data, ReportSettings report, AppLanguage language)
     {
         var lines = new List<string>();
 
-        if (features.ShowUserLogin)
+        if (report.IncludeUserLogin)
         {
             lines.Add(language == AppLanguage.Polish
                 ? $"Login: {data.UserLogin}"
                 : $"Login: {data.UserLogin}");
         }
 
-        if (features.ShowDisplayName)
+        if (report.IncludeDisplayName)
         {
             lines.Add(language == AppLanguage.Polish
                 ? $"Nazwa użytkownika: {data.UserDisplayName}"
@@ -263,19 +263,19 @@ internal static class ReportFormatter
         AppLanguage language,
         bool inline = false)
     {
-        var features = ConfigurationService.Current.Features;
-        if (!features.ShowTeamViewerSection && !features.IncludeAteraInReports)
+        var report = ConfigurationService.Current.Report;
+        if (!report.IncludeTeamViewer && !report.IncludeAtera)
         {
             return;
         }
 
         var lines = new List<string>();
-        if (features.ShowTeamViewerSection)
+        if (report.IncludeTeamViewer)
         {
             lines.Add($"TeamViewer: {GetTeamViewerStatus(data, language)}");
         }
 
-        if (features.IncludeAteraInReports)
+        if (report.IncludeAtera)
         {
             lines.Add($"Atera: {GetAteraStatus(data, language)}");
         }

@@ -44,6 +44,7 @@ public static class ConfigurationService
             var json = File.ReadAllText(path);
             var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? CreateDefaultSettings();
             ApplyLegacySupportFields(json, settings);
+            ApplyReportUpgrade(json, settings);
             return MergeWithDefaults(settings);
         }
         catch
@@ -123,11 +124,29 @@ public static class ConfigurationService
             IncludeAteraInReports = settings.Features.IncludeAteraInReports,
             CheckUpdates = settings.Features.CheckUpdates
         },
+        Report = CloneReportSettings(settings.Report),
         Update = new UpdateSettings
         {
             Enabled = settings.Update.Enabled,
             VersionUrl = settings.Update.VersionUrl
         }
+    };
+
+    private static ReportSettings CloneReportSettings(ReportSettings report) => new()
+    {
+        IncludeComputerName = report.IncludeComputerName,
+        IncludeDomain = report.IncludeDomain,
+        IncludeOperatingSystem = report.IncludeOperatingSystem,
+        IncludeIpAddress = report.IncludeIpAddress,
+        IncludeDnsServers = report.IncludeDnsServers,
+        IncludeUptime = report.IncludeUptime,
+        IncludeManufacturerModel = report.IncludeManufacturerModel,
+        IncludeSerialNumber = report.IncludeSerialNumber,
+        IncludeDeviceType = report.IncludeDeviceType,
+        IncludeUserLogin = report.IncludeUserLogin,
+        IncludeDisplayName = report.IncludeDisplayName,
+        IncludeTeamViewer = report.IncludeTeamViewer,
+        IncludeAtera = report.IncludeAtera
     };
 
     private static void ApplyLegacySupportFields(string json, AppSettings settings)
@@ -152,6 +171,41 @@ public static class ConfigurationService
         }
     }
 
+    private static void ApplyReportUpgrade(string json, AppSettings settings)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            if (document.RootElement.TryGetProperty("report", out _))
+            {
+                settings.Report ??= CreateDefaultSettings().Report;
+                return;
+            }
+
+            var features = settings.Features ?? new FeatureSettings();
+            settings.Report = new ReportSettings
+            {
+                IncludeComputerName = features.ShowComputerName,
+                IncludeDomain = features.ShowDomain,
+                IncludeOperatingSystem = features.ShowOperatingSystem,
+                IncludeIpAddress = features.ShowIpAddress,
+                IncludeDnsServers = features.ShowDnsServers,
+                IncludeUptime = features.ShowUptime,
+                IncludeManufacturerModel = features.ShowManufacturerModel,
+                IncludeSerialNumber = features.ShowSerialNumber,
+                IncludeDeviceType = features.ShowDeviceType,
+                IncludeUserLogin = features.ShowUserLogin,
+                IncludeDisplayName = features.ShowDisplayName,
+                IncludeTeamViewer = features.ShowTeamViewer,
+                IncludeAtera = features.IncludeAteraInReports
+            };
+        }
+        catch
+        {
+            settings.Report ??= CreateDefaultSettings().Report;
+        }
+    }
+
     public static AppSettings MergeWithDefaults(AppSettings settings)
     {
         var defaults = CreateDefaultSettings();
@@ -159,6 +213,7 @@ public static class ConfigurationService
         settings.Application ??= new ApplicationSettings();
         settings.Support ??= new SupportSettings();
         settings.Features ??= new FeatureSettings();
+        settings.Report ??= CloneReportSettings(defaults.Report);
         settings.Update ??= new UpdateSettings();
 
         settings.Application.Name = NullIfWhiteSpace(settings.Application.Name) ?? defaults.Application.Name;
@@ -236,6 +291,22 @@ public static class ConfigurationService
             ShowAteraInGui = false,
             IncludeAteraInReports = false,
             CheckUpdates = false
+        },
+        Report = new ReportSettings
+        {
+            IncludeComputerName = true,
+            IncludeDomain = true,
+            IncludeOperatingSystem = true,
+            IncludeIpAddress = true,
+            IncludeDnsServers = true,
+            IncludeUptime = true,
+            IncludeManufacturerModel = true,
+            IncludeSerialNumber = true,
+            IncludeDeviceType = true,
+            IncludeUserLogin = true,
+            IncludeDisplayName = true,
+            IncludeTeamViewer = false,
+            IncludeAtera = false
         },
         Update = new UpdateSettings
         {

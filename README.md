@@ -61,7 +61,7 @@ See [appsettings.example.json](appsettings.example.json) for a full example.
 
 **PCInform.Configurator.exe** is a separate administrator tool for creating and editing `C:\ProgramData\PCInform\appsettings.json`. It is **not** included in the standard end-user installer and is **not** part of the end-user application.
 
-Download it separately from [GitHub Releases](https://github.com/TimeWizard007/pcinform/releases) when you need a graphical editor for Application, Support, Features, and Update settings. The configurator validates settings before saving (for example at least one language enabled, and `versionUrl` when updates are enabled).
+Download it separately from [GitHub Releases](https://github.com/TimeWizard007/pcinform/releases) when you need a graphical editor for Application, Support, Features, Report, and Update settings. The configurator validates settings before saving (for example at least one language enabled, and `versionUrl` when updates are enabled).
 
 End users normally do not need the configurator — IT administrators prepare the machine-wide configuration before or after deployment, or edit `appsettings.json` directly.
 
@@ -71,10 +71,11 @@ End users normally do not need the configurator — IT administrators prepare th
 |---------|---------|
 | **Application** | App name, window title, banner text, default language, accent color, enabled languages |
 | **Support** | Company name, support email/phone/mobile/website, CC/BCC, subject prefixes, contact visibility flags |
-| **Features** | Which computer/user fields are shown, optional TeamViewer/Atera integration, update-check permission |
+| **Features** | Which computer/user fields are shown in the main window, optional TeamViewer/Atera integration, update-check permission |
+| **Report** | Which fields are included in copied clipboard reports and **Report problem** email content |
 | **Update** | Whether to check a remote `version.json` and which URL to use (disabled by default) |
 
-Visibility flags in **Support** and **Features** control what appears in the UI and in copied/emailed reports. They do **not** stop the application from collecting system information internally.
+**Display vs report:** `features.show*` flags control **main window visibility only**. The separate `report.include*` flags control **clipboard reports** and **Report problem** email content. You can show a minimal UI while still including full diagnostics in reports, or the reverse. These flags do **not** stop the application from collecting system information internally.
 
 ### Application (`application`)
 
@@ -118,13 +119,22 @@ Website URL is set under `support.websiteUrl`. Display is controlled by `support
 
 Organizations can show a **minimal** UI (banner + contact + Report problem) or a **full diagnostic** view by editing `appsettings.json` — no recompile required.
 
-**Field visibility** (default **true** unless noted):
+**UI field visibility** (default **true** unless noted):
 
 - Computer: `showComputerName`, `showDomain`, `showOperatingSystem`, `showIpAddress`, `showDnsServers`, `showUptime`, `showManufacturerModel`, `showSerialNumber`, `showDeviceType`
 - User: `showUserLogin`, `showDisplayName`
 - TeamViewer section: `showTeamViewerSection` (default **false**)
 
-Disabled fields are omitted from the UI, clipboard report, and support email.
+Disabled `show*` fields are omitted from the **main window** only.
+
+### Report (`report`)
+
+Controls which fields appear in **copied clipboard reports** and **Report problem** email drafts (default **true** unless noted):
+
+- Computer/user: `includeComputerName`, `includeDomain`, `includeOperatingSystem`, `includeIpAddress`, `includeDnsServers`, `includeUptime`, `includeManufacturerModel`, `includeSerialNumber`, `includeDeviceType`, `includeUserLogin`, `includeDisplayName`
+- Agents: `includeTeamViewer`, `includeAtera` (default **false**)
+
+When upgrading from older configs without a `report` section, PC Inform derives initial report flags from the previous `features` visibility settings so existing deployments keep similar report content.
 
 **Optional integrations** (default **false** in public configuration):
 
@@ -134,7 +144,7 @@ Disabled fields are omitted from the UI, clipboard report, and support email.
 | `allowLaunchTeamViewer` | Show launch button when TeamViewer is installed |
 | `detectAtera` | Detect Atera agent |
 | `showAteraInGui` | Show Atera in the UI |
-| `includeAteraInReports` | Include Atera in copied/emailed reports |
+| `includeAteraInReports` | Legacy report flag (superseded by `report.includeAtera`; kept for compatibility) |
 | `checkUpdates` | Allow update check on startup |
 
 ### Update (`update`)

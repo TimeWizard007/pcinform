@@ -65,6 +65,7 @@ internal sealed class MainForm : Form
     private Button _closeButton = null!;
 
     private const int TableRowHeight = 36;
+    private const int TableRowVerticalPadding = 10;
     private const int TablePanelExtraHeight = 20;
     private const int ContactRowHeight = 32;
     private const int ContactPanelExtraHeight = 26;
@@ -694,7 +695,7 @@ internal sealed class MainForm : Form
                 AutoSize = false,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Margin = new Padding(0, 4, 8, 4),
+                Margin = new Padding(12, TableRowVerticalPadding, 8, TableRowVerticalPadding),
                 Font = _labelFont,
                 ForeColor = AppTheme.LabelText
             };
@@ -705,11 +706,10 @@ internal sealed class MainForm : Form
                 BackColor = AppTheme.PanelBackground,
                 ForeColor = AppTheme.ValueText,
                 Font = _valueFont,
-                Margin = new Padding(0, 4, 0, 4),
+                Margin = new Padding(0, TableRowVerticalPadding, 12, TableRowVerticalPadding),
                 Dock = DockStyle.Fill,
                 TabStop = false,
-                Multiline = true,
-                WordWrap = false
+                Multiline = false
             };
             table.Controls.Add(captions[i], 0, i);
             table.Controls.Add(values[i], 1, i);

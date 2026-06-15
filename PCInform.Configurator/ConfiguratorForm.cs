@@ -53,6 +53,20 @@ internal sealed class ConfiguratorForm : Form
     private CheckBox _featIncludeAteraInReports = null!;
     private CheckBox _featCheckUpdates = null!;
 
+    private CheckBox _reportIncludeComputerName = null!;
+    private CheckBox _reportIncludeDomain = null!;
+    private CheckBox _reportIncludeOperatingSystem = null!;
+    private CheckBox _reportIncludeIpAddress = null!;
+    private CheckBox _reportIncludeDnsServers = null!;
+    private CheckBox _reportIncludeUptime = null!;
+    private CheckBox _reportIncludeManufacturerModel = null!;
+    private CheckBox _reportIncludeSerialNumber = null!;
+    private CheckBox _reportIncludeDeviceType = null!;
+    private CheckBox _reportIncludeUserLogin = null!;
+    private CheckBox _reportIncludeDisplayName = null!;
+    private CheckBox _reportIncludeTeamViewer = null!;
+    private CheckBox _reportIncludeAtera = null!;
+
     private CheckBox _updateEnabled = null!;
     private TextBox _updateVersionUrl = null!;
 
@@ -91,6 +105,7 @@ internal sealed class ConfiguratorForm : Form
         tabControl.TabPages.Add(CreateApplicationTab());
         tabControl.TabPages.Add(CreateSupportTab());
         tabControl.TabPages.Add(CreateFeaturesTab());
+        tabControl.TabPages.Add(CreateReportTab());
         tabControl.TabPages.Add(CreateUpdateTab());
 
         var buttonPanel = new Panel { Dock = DockStyle.Bottom, Height = 48, Padding = new Padding(12, 8, 12, 8) };
@@ -115,14 +130,14 @@ internal sealed class ConfiguratorForm : Form
         var page = new TabPage("Application") { Padding = new Padding(12) };
         var panel = CreateScrollPanel(page);
         var table = CreateFieldTable(panel, 8);
-        _appName = AddTextRow(table, 0, "Name");
-        _appWindowTitle = AddTextRow(table, 1, "WindowTitle");
-        _appBannerText = AddTextRow(table, 2, "BannerText");
-        _appDefaultLanguage = AddTextRow(table, 3, "DefaultLanguage");
-        _appAccentColor = AddTextRow(table, 4, "AccentColor");
-        _appWebsiteUrl = AddTextRow(table, 5, "WebsiteUrl");
-        _appEnablePolish = AddCheckRow(table, 6, "EnablePolish");
-        _appEnableEnglish = AddCheckRow(table, 7, "EnableEnglish");
+        _appName = AddTextRow(table, 0, "Application name");
+        _appWindowTitle = AddTextRow(table, 1, "Window title");
+        _appBannerText = AddTextRow(table, 2, "Banner text");
+        _appDefaultLanguage = AddTextRow(table, 3, "Default language");
+        _appAccentColor = AddTextRow(table, 4, "Accent color");
+        _appWebsiteUrl = AddTextRow(table, 5, "Website URL");
+        _appEnablePolish = AddCheckRow(table, 6, "Enable Polish");
+        _appEnableEnglish = AddCheckRow(table, 7, "Enable English");
         return page;
     }
 
@@ -131,20 +146,20 @@ internal sealed class ConfiguratorForm : Form
         var page = new TabPage("Support") { Padding = new Padding(12) };
         var panel = CreateScrollPanel(page);
         var table = CreateFieldTable(panel, 14);
-        _supportCompanyName = AddTextRow(table, 0, "CompanyName");
-        _supportEmailTo = AddTextRow(table, 1, "EmailTo");
-        _supportEmailCc = AddTextRow(table, 2, "EmailCc");
-        _supportEmailBcc = AddTextRow(table, 3, "EmailBcc");
-        _supportSubjectPl = AddTextRow(table, 4, "EmailSubjectPrefixPl");
-        _supportSubjectEn = AddTextRow(table, 5, "EmailSubjectPrefixEn");
+        _supportCompanyName = AddTextRow(table, 0, "Company name");
+        _supportEmailTo = AddTextRow(table, 1, "Support email");
+        _supportEmailCc = AddTextRow(table, 2, "CC");
+        _supportEmailBcc = AddTextRow(table, 3, "BCC");
+        _supportSubjectPl = AddTextRow(table, 4, "Email subject prefix (PL)");
+        _supportSubjectEn = AddTextRow(table, 5, "Email subject prefix (EN)");
         _supportPhone = AddTextRow(table, 6, "Phone");
-        _supportMobilePhone = AddTextRow(table, 7, "MobilePhone");
-        _supportWebsiteUrl = AddTextRow(table, 8, "WebsiteUrl");
-        _supportShowCompanyName = AddCheckRow(table, 9, "ShowCompanyName");
-        _supportShowEmail = AddCheckRow(table, 10, "ShowEmail");
-        _supportShowPhone = AddCheckRow(table, 11, "ShowPhone");
-        _supportShowMobilePhone = AddCheckRow(table, 12, "ShowMobilePhone");
-        _supportShowWebsite = AddCheckRow(table, 13, "ShowWebsite");
+        _supportMobilePhone = AddTextRow(table, 7, "Mobile phone");
+        _supportWebsiteUrl = AddTextRow(table, 8, "Website URL");
+        _supportShowCompanyName = AddCheckRow(table, 9, "Show company name");
+        _supportShowEmail = AddCheckRow(table, 10, "Show email");
+        _supportShowPhone = AddCheckRow(table, 11, "Show phone");
+        _supportShowMobilePhone = AddCheckRow(table, 12, "Show mobile phone");
+        _supportShowWebsite = AddCheckRow(table, 13, "Show website");
         return page;
     }
 
@@ -153,24 +168,45 @@ internal sealed class ConfiguratorForm : Form
         var page = new TabPage("Features") { Padding = new Padding(12) };
         var panel = CreateScrollPanel(page);
         var table = CreateFieldTable(panel, 18);
-        _featShowComputerName = AddCheckRow(table, 0, "ShowComputerName");
-        _featShowDomain = AddCheckRow(table, 1, "ShowDomain");
-        _featShowOperatingSystem = AddCheckRow(table, 2, "ShowOperatingSystem");
-        _featShowIpAddress = AddCheckRow(table, 3, "ShowIpAddress");
-        _featShowDnsServers = AddCheckRow(table, 4, "ShowDnsServers");
-        _featShowUptime = AddCheckRow(table, 5, "ShowUptime");
-        _featShowManufacturerModel = AddCheckRow(table, 6, "ShowManufacturerModel");
-        _featShowSerialNumber = AddCheckRow(table, 7, "ShowSerialNumber");
-        _featShowDeviceType = AddCheckRow(table, 8, "ShowDeviceType");
-        _featShowUserLogin = AddCheckRow(table, 9, "ShowUserLogin");
-        _featShowDisplayName = AddCheckRow(table, 10, "ShowDisplayName");
-        _featShowTeamViewerSection = AddCheckRow(table, 11, "ShowTeamViewerSection");
-        _featShowTeamViewer = AddCheckRow(table, 12, "ShowTeamViewer");
-        _featAllowLaunchTeamViewer = AddCheckRow(table, 13, "AllowLaunchTeamViewer");
-        _featDetectAtera = AddCheckRow(table, 14, "DetectAtera");
-        _featShowAteraInGui = AddCheckRow(table, 15, "ShowAteraInGui");
-        _featIncludeAteraInReports = AddCheckRow(table, 16, "IncludeAteraInReports");
-        _featCheckUpdates = AddCheckRow(table, 17, "CheckUpdates");
+        _featShowComputerName = AddCheckRow(table, 0, "Show computer name");
+        _featShowDomain = AddCheckRow(table, 1, "Show domain");
+        _featShowOperatingSystem = AddCheckRow(table, 2, "Show operating system");
+        _featShowIpAddress = AddCheckRow(table, 3, "Show IP address");
+        _featShowDnsServers = AddCheckRow(table, 4, "Show DNS servers");
+        _featShowUptime = AddCheckRow(table, 5, "Show uptime");
+        _featShowManufacturerModel = AddCheckRow(table, 6, "Show manufacturer/model");
+        _featShowSerialNumber = AddCheckRow(table, 7, "Show serial number");
+        _featShowDeviceType = AddCheckRow(table, 8, "Show device type");
+        _featShowUserLogin = AddCheckRow(table, 9, "Show user login");
+        _featShowDisplayName = AddCheckRow(table, 10, "Show display name");
+        _featShowTeamViewerSection = AddCheckRow(table, 11, "Show TeamViewer section");
+        _featShowTeamViewer = AddCheckRow(table, 12, "Detect/show TeamViewer status");
+        _featAllowLaunchTeamViewer = AddCheckRow(table, 13, "Allow launching TeamViewer");
+        _featDetectAtera = AddCheckRow(table, 14, "Detect Atera");
+        _featShowAteraInGui = AddCheckRow(table, 15, "Show Atera in UI");
+        _featIncludeAteraInReports = AddCheckRow(table, 16, "Include Atera in reports");
+        _featCheckUpdates = AddCheckRow(table, 17, "Check updates");
+        return page;
+    }
+
+    private TabPage CreateReportTab()
+    {
+        var page = new TabPage("Report") { Padding = new Padding(12) };
+        var panel = CreateScrollPanel(page);
+        var table = CreateFieldTable(panel, 13);
+        _reportIncludeComputerName = AddCheckRow(table, 0, "Include computer name");
+        _reportIncludeDomain = AddCheckRow(table, 1, "Include domain");
+        _reportIncludeOperatingSystem = AddCheckRow(table, 2, "Include operating system");
+        _reportIncludeIpAddress = AddCheckRow(table, 3, "Include IP address");
+        _reportIncludeDnsServers = AddCheckRow(table, 4, "Include DNS servers");
+        _reportIncludeUptime = AddCheckRow(table, 5, "Include uptime");
+        _reportIncludeManufacturerModel = AddCheckRow(table, 6, "Include manufacturer/model");
+        _reportIncludeSerialNumber = AddCheckRow(table, 7, "Include serial number");
+        _reportIncludeDeviceType = AddCheckRow(table, 8, "Include device type");
+        _reportIncludeUserLogin = AddCheckRow(table, 9, "Include user login");
+        _reportIncludeDisplayName = AddCheckRow(table, 10, "Include display name");
+        _reportIncludeTeamViewer = AddCheckRow(table, 11, "Include TeamViewer");
+        _reportIncludeAtera = AddCheckRow(table, 12, "Include Atera");
         return page;
     }
 
@@ -179,8 +215,8 @@ internal sealed class ConfiguratorForm : Form
         var page = new TabPage("Update") { Padding = new Padding(12) };
         var panel = CreateScrollPanel(page);
         var table = CreateFieldTable(panel, 2);
-        _updateEnabled = AddCheckRow(table, 0, "Enabled");
-        _updateVersionUrl = AddTextRow(table, 1, "VersionUrl");
+        _updateEnabled = AddCheckRow(table, 0, "Enable update check");
+        _updateVersionUrl = AddTextRow(table, 1, "Version JSON URL");
         return page;
     }
 
@@ -408,6 +444,21 @@ internal sealed class ConfiguratorForm : Form
         _featIncludeAteraInReports.Checked = features.IncludeAteraInReports;
         _featCheckUpdates.Checked = features.CheckUpdates;
 
+        var report = _settings.Report;
+        _reportIncludeComputerName.Checked = report.IncludeComputerName;
+        _reportIncludeDomain.Checked = report.IncludeDomain;
+        _reportIncludeOperatingSystem.Checked = report.IncludeOperatingSystem;
+        _reportIncludeIpAddress.Checked = report.IncludeIpAddress;
+        _reportIncludeDnsServers.Checked = report.IncludeDnsServers;
+        _reportIncludeUptime.Checked = report.IncludeUptime;
+        _reportIncludeManufacturerModel.Checked = report.IncludeManufacturerModel;
+        _reportIncludeSerialNumber.Checked = report.IncludeSerialNumber;
+        _reportIncludeDeviceType.Checked = report.IncludeDeviceType;
+        _reportIncludeUserLogin.Checked = report.IncludeUserLogin;
+        _reportIncludeDisplayName.Checked = report.IncludeDisplayName;
+        _reportIncludeTeamViewer.Checked = report.IncludeTeamViewer;
+        _reportIncludeAtera.Checked = report.IncludeAtera;
+
         _updateEnabled.Checked = _settings.Update.Enabled;
         _updateVersionUrl.Text = _settings.Update.VersionUrl;
     }
@@ -456,6 +507,20 @@ internal sealed class ConfiguratorForm : Form
         _settings.Features.ShowAteraInGui = _featShowAteraInGui.Checked;
         _settings.Features.IncludeAteraInReports = _featIncludeAteraInReports.Checked;
         _settings.Features.CheckUpdates = _featCheckUpdates.Checked;
+
+        _settings.Report.IncludeComputerName = _reportIncludeComputerName.Checked;
+        _settings.Report.IncludeDomain = _reportIncludeDomain.Checked;
+        _settings.Report.IncludeOperatingSystem = _reportIncludeOperatingSystem.Checked;
+        _settings.Report.IncludeIpAddress = _reportIncludeIpAddress.Checked;
+        _settings.Report.IncludeDnsServers = _reportIncludeDnsServers.Checked;
+        _settings.Report.IncludeUptime = _reportIncludeUptime.Checked;
+        _settings.Report.IncludeManufacturerModel = _reportIncludeManufacturerModel.Checked;
+        _settings.Report.IncludeSerialNumber = _reportIncludeSerialNumber.Checked;
+        _settings.Report.IncludeDeviceType = _reportIncludeDeviceType.Checked;
+        _settings.Report.IncludeUserLogin = _reportIncludeUserLogin.Checked;
+        _settings.Report.IncludeDisplayName = _reportIncludeDisplayName.Checked;
+        _settings.Report.IncludeTeamViewer = _reportIncludeTeamViewer.Checked;
+        _settings.Report.IncludeAtera = _reportIncludeAtera.Checked;
 
         _settings.Update.Enabled = _updateEnabled.Checked;
         _settings.Update.VersionUrl = _updateVersionUrl.Text.Trim();

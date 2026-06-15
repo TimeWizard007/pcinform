@@ -36,10 +36,24 @@ public static class VisibilityHelper
     public static bool HasAnyUserField(FeatureSettings features) =>
         features.ShowUserLogin || features.ShowDisplayName;
 
-    public static bool HasAnyReportContent(FeatureSettings features, SupportSettings support) =>
+    public static bool HasAnyComputerReportField(ReportSettings report) =>
+        report.IncludeComputerName ||
+        report.IncludeDomain ||
+        report.IncludeOperatingSystem ||
+        report.IncludeIpAddress ||
+        report.IncludeDnsServers ||
+        report.IncludeUptime ||
+        report.IncludeManufacturerModel ||
+        report.IncludeSerialNumber ||
+        report.IncludeDeviceType;
+
+    public static bool HasAnyUserReportField(ReportSettings report) =>
+        report.IncludeUserLogin || report.IncludeDisplayName;
+
+    public static bool HasAnyReportContent(ReportSettings report, SupportSettings support) =>
         IsContactSectionVisible(support) ||
-        HasAnyComputerField(features) ||
-        HasAnyUserField(features) ||
-        features.ShowTeamViewerSection ||
-        features.IncludeAteraInReports;
+        HasAnyComputerReportField(report) ||
+        HasAnyUserReportField(report) ||
+        report.IncludeTeamViewer ||
+        report.IncludeAtera;
 }

@@ -2,6 +2,8 @@
 
 This document describes how maintainers prepare, build, and publish PC Inform releases. End-user documentation is in the [README](../README.md). Developer context is in [DEVELOPER.md](DEVELOPER.md).
 
+**Current status:** development builds only — no GitHub release has been published for the latest changes yet. Automatic in-app update installation is **not** implemented; update checks (when enabled) only notify the user and open a download URL in the browser.
+
 ## Overview
 
 A release consists of:

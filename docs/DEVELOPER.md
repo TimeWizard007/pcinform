@@ -40,18 +40,29 @@ PC Inform uses **two configuration layers**:
 - **Loaded by:** `ConfigurationService` at startup
 - **Created by:** installer (if missing) or application first run (if missing and writable)
 - **Never overwritten** on upgrade or by the app when the file already exists
-- **Scope:** branding, support contacts, feature visibility, optional update source
+- **Scope:** branding, support contacts, UI visibility (`features`), report content (`report`), optional update source
 
 The application does **not** read config from `%LOCALAPPDATA%` or from beside the executable.
 
 Implementation entry points:
 
 - `PCInform.Shared/Configuration/AppPaths.cs` — path constants
-- `PCInform.Shared/Configuration/ConfigurationService.cs` — load, save, merge defaults, legacy `support.email` migration
+- `PCInform.Shared/Configuration/ConfigurationService.cs` — load, save, merge defaults, legacy `support.email` migration, `report` section upgrade
 - `PCInform.Shared/Configuration/ConfigurationValidator.cs` — validation for the configurator
 - `PCInform.Shared/Configuration/VisibilityHelper.cs` — contact/section visibility rules
 - `PCInform.Shared/Models/AppSettings.cs` — JSON model
-- `PCInform.Configurator/` — administrator WinForms editor for `appsettings.json`
+- `PCInform.Configurator/` — administrator WinForms editor for `appsettings.json` (Application, Support, Features, Report, Update tabs)
+
+### Config schema upgrade
+
+On startup and when loading config in the configurator, `ConfigurationService`:
+
+- Merges missing top-level sections with safe defaults (`application`, `support`, `features`, `report`, `update`)
+- Adds a missing `report` section by deriving values from existing `features` flags (preserves prior report behaviour for older configs)
+- Preserves all existing field values and does not remove unknown JSON properties on deserialize
+- Does not overwrite an existing `appsettings.json` on disk unless the app or configurator explicitly saves
+
+UI visibility is controlled by `features.show*`. Clipboard and **Report problem** content uses `report.include*` independently.
 
 ### 2. Per-user `settings.json` (language only)
 
