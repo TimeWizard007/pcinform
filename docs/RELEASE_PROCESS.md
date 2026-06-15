@@ -68,15 +68,13 @@ Example: [version.example.json](version.example.json)
 
 ## Building release binaries
 
-Publish **both** executables to the same folder before building the installer.
+Publish the end-user application and the optional configurator as **separate** outputs before building the installer and GitHub Release assets.
 
-### Application and configurator (self-contained single file)
+### End-user application (self-contained single file)
 
 On Windows (PowerShell):
 
 ```powershell
-$publishDir = "PCInform\bin\Release\net8.0-windows\win-x64\publish"
-
 dotnet publish PCInform\PCInform.csproj `
   -c Release `
   -r win-x64 `
@@ -84,18 +82,7 @@ dotnet publish PCInform\PCInform.csproj `
   /p:PublishSingleFile=true `
   /p:PublishTrimmed=false `
   /p:IncludeNativeLibrariesForSelfExtract=true `
-  /p:EnableCompressionInSingleFile=true `
-  -o $publishDir
-
-dotnet publish PCInform.Configurator\PCInform.Configurator.csproj `
-  -c Release `
-  -r win-x64 `
-  --self-contained true `
-  /p:PublishSingleFile=true `
-  /p:PublishTrimmed=false `
-  /p:IncludeNativeLibrariesForSelfExtract=true `
-  /p:EnableCompressionInSingleFile=true `
-  -o $publishDir
+  /p:EnableCompressionInSingleFile=true
 ```
 
 Output directory:
@@ -104,10 +91,22 @@ Output directory:
 PCInform\bin\Release\net8.0-windows\win-x64\publish\
 ```
 
-Primary artifacts:
+Primary artifact: `PCInform.exe` (used by `PCInform-Setup.exe`)
 
-- `PCInform.exe` — end-user application
-- `PCInform.Configurator.exe` — administrator configuration editor
+### Administrator configurator (separate asset)
+
+```powershell
+dotnet publish PCInform.Configurator\PCInform.Configurator.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  /p:PublishSingleFile=true `
+  /p:PublishTrimmed=false `
+  /p:IncludeNativeLibrariesForSelfExtract=true `
+  /p:EnableCompressionInSingleFile=true
+```
+
+Primary artifact: `PCInform.Configurator.exe` (attach separately to GitHub Releases; **not** included in the standard installer)
 
 ### Installer
 
@@ -119,13 +118,14 @@ iscc installer\PCInform.iss
 
 Output: `PCInform-Setup.exe` (in the installer output folder configured by Inno Setup).
 
-The installer:
+The end-user installer:
 
 - Installs for all users to `C:\Program Files\PCInform\` (`{autopf}\PCInform`)
 - Requires administrator privileges
-- Installs `PCInform.exe` and `PCInform.Configurator.exe`
-- Adds all-users Start Menu shortcuts for **PC Inform** and **PC Inform Configurator**
-- Optional all-users desktop shortcut for **PC Inform** only (no configurator desktop shortcut)
+- Installs `PCInform.exe` and its required publish files only
+- Does **not** install `PCInform.Configurator.exe`
+- Adds an all-users Start Menu shortcut for **PC Inform**
+- Optional all-users desktop shortcut for **PC Inform** only
 - Seeds `C:\ProgramData\PCInform\appsettings.json` **only if it does not exist**:
   - from `appsettings.json` next to the setup executable, if present
   - otherwise from `appsettings.example.json`
@@ -151,7 +151,8 @@ Distribute these via GitHub Releases only.
 4. **Release title:** `PC Inform vX.Y.Z`
 5. **Description:** copy relevant section from `CHANGELOG.md`
 6. **Attach assets:**
-   - **Required for most users:** `PCInform-Setup.exe`
+   - **Required for most users:** `PCInform-Setup.exe` (end-user installer; `PCInform.exe` only)
+   - **Optional (administrators):** `PCInform.Configurator.exe` (separate portable admin tool; not bundled in the installer)
    - **Optional:** `PCInform.exe` (portable) or a ZIP containing it
    - **Optional:** `version.json` for update-aware deployments
 7. Publish the release

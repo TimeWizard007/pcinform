@@ -1,10 +1,9 @@
-; PC Inform — per-machine installer (administrator required)
-; Build both executables first, then compile this script with Inno Setup 6.
+; PC Inform — per-machine end-user installer (administrator required)
+; Build PCInform.exe first, then compile this script with Inno Setup 6.
 ; Optional: place appsettings.json next to PCInform-Setup.exe to seed global config on first install.
 
 #define AppName "PC Inform"
 #define AppExe "PCInform.exe"
-#define ConfiguratorExe "PCInform.Configurator.exe"
 #define PublishDir "..\PCInform\bin\Release\net8.0-windows\win-x64\publish"
 #define ExampleConfig "..\appsettings.example.json"
 
@@ -36,14 +35,12 @@ Name: "{commonappdata}\PCInform"; Permissions: users-modify
 
 [Files]
 Source: "{#PublishDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#PublishDir}\{#ConfiguratorExe}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "appsettings.json"
+Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "appsettings.json,PCInform.Configurator.exe"
 Source: "{src}\appsettings.json"; DestDir: "{commonappdata}\PCInform"; DestName: "appsettings.json"; Flags: onlyifdoesntexist external skipifsourcedoesntexist
 Source: "{#ExampleConfig}"; DestDir: "{commonappdata}\PCInform"; DestName: "appsettings.json"; Flags: onlyifdoesntexist
 
 [Icons]
 Name: "{commonprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
-Name: "{commonprograms}\PC Inform Configurator"; Filename: "{app}\{#ConfiguratorExe}"
 Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]

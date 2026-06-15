@@ -80,11 +80,9 @@ dotnet run --project PCInform.Configurator\PCInform.Configurator.csproj
 
 ### Release publish (single-file, self-contained)
 
-Publish both executables to the same output folder:
+Publish the end-user application:
 
 ```powershell
-$publishDir = "PCInform\bin\Release\net8.0-windows\win-x64\publish"
-
 dotnet publish PCInform\PCInform.csproj `
   -c Release `
   -r win-x64 `
@@ -92,9 +90,18 @@ dotnet publish PCInform\PCInform.csproj `
   /p:PublishSingleFile=true `
   /p:PublishTrimmed=false `
   /p:IncludeNativeLibrariesForSelfExtract=true `
-  /p:EnableCompressionInSingleFile=true `
-  -o $publishDir
+  /p:EnableCompressionInSingleFile=true
+```
 
+Output:
+
+```
+PCInform\bin\Release\net8.0-windows\win-x64\publish\PCInform.exe
+```
+
+Publish the optional administrator configurator separately (not bundled in `PCInform-Setup.exe`):
+
+```powershell
 dotnet publish PCInform.Configurator\PCInform.Configurator.csproj `
   -c Release `
   -r win-x64 `
@@ -102,31 +109,25 @@ dotnet publish PCInform.Configurator\PCInform.Configurator.csproj `
   /p:PublishSingleFile=true `
   /p:PublishTrimmed=false `
   /p:IncludeNativeLibrariesForSelfExtract=true `
-  /p:EnableCompressionInSingleFile=true `
-  -o $publishDir
+  /p:EnableCompressionInSingleFile=true
 ```
 
 Output:
 
 ```
-PCInform\bin\Release\net8.0-windows\win-x64\publish\PCInform.exe
-PCInform\bin\Release\net8.0-windows\win-x64\publish\PCInform.Configurator.exe
+PCInform.Configurator\bin\Release\net8.0-windows\win-x64\publish\PCInform.Configurator.exe
 ```
 
 Cross-publish from Linux:
 
 ```bash
-PUBLISH_DIR=PCInform/bin/Release/net8.0-windows/win-x64/publish
-
 dotnet publish PCInform/PCInform.csproj -c Release -r win-x64 --self-contained true \
   /p:PublishSingleFile=true /p:PublishTrimmed=false \
-  /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true \
-  -o "$PUBLISH_DIR"
+  /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true
 
 dotnet publish PCInform.Configurator/PCInform.Configurator.csproj -c Release -r win-x64 --self-contained true \
   /p:PublishSingleFile=true /p:PublishTrimmed=false \
-  /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true \
-  -o "$PUBLISH_DIR"
+  /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true
 ```
 
 ### Installer
@@ -137,7 +138,7 @@ After publish, compile the Inno Setup script on Windows:
 iscc installer\PCInform.iss
 ```
 
-The script installs the application for all users to `C:\Program Files\PCInform\`, includes `PCInform.Configurator.exe`, and creates `C:\ProgramData\PCInform\appsettings.json` with `onlyifdoesntexist` (from `appsettings.json` next to the installer when present, otherwise from `appsettings.example.json`).
+The end-user installer script installs `PCInform.exe` only (not the configurator) for all users to `C:\Program Files\PCInform\`, and creates `C:\ProgramData\PCInform\appsettings.json` with `onlyifdoesntexist` (from `appsettings.json` next to the installer when present, otherwise from `appsettings.example.json`).
 
 Replace `PCInform/icon.ico` before release if the icon changes.
 
@@ -167,7 +168,8 @@ Full steps: [RELEASE_PROCESS.md](RELEASE_PROCESS.md)
 
 | Asset | Purpose |
 |-------|---------|
-| `PCInform-Setup.exe` | Primary end-user installer (includes `PCInform.exe` and `PCInform.Configurator.exe`) |
+| `PCInform-Setup.exe` | Primary end-user installer (`PCInform.exe` only) |
+| `PCInform.Configurator.exe` | Optional administrator config editor (separate GitHub Release asset) |
 | `PCInform.exe` (optional) | Portable binary or ZIP |
 | `version.json` (optional) | Remote metadata for `update.versionUrl` |
 

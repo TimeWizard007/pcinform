@@ -57,13 +57,13 @@ Per-user **language preference** only is stored at `%APPDATA%\PCInform\settings.
 
 See [appsettings.example.json](appsettings.example.json) for a full example.
 
-### PC Inform Configurator (administrators)
+### PC Inform Configurator (optional admin tool)
 
-**PCInform.Configurator.exe** is a separate administrator tool installed with PC Inform (Start Menu shortcut: **PC Inform Configurator**). It is not part of the end-user application.
+**PCInform.Configurator.exe** is a separate administrator tool for creating and editing `C:\ProgramData\PCInform\appsettings.json`. It is **not** included in the standard end-user installer and is **not** part of the end-user application.
 
-Use it to create or edit `C:\ProgramData\PCInform\appsettings.json` with a tabbed editor for Application, Support, Features, and Update settings. The configurator validates settings before saving (for example at least one language enabled, and `versionUrl` when updates are enabled).
+Download it separately from [GitHub Releases](https://github.com/TimeWizard007/pcinform/releases) when you need a graphical editor for Application, Support, Features, and Update settings. The configurator validates settings before saving (for example at least one language enabled, and `versionUrl` when updates are enabled).
 
-End users normally do not need the configurator — IT administrators prepare the machine-wide configuration before or after deployment.
+End users normally do not need the configurator — IT administrators prepare the machine-wide configuration before or after deployment, or edit `appsettings.json` directly.
 
 ### JSON sections overview
 
@@ -160,7 +160,8 @@ Official builds are published at:
 
 Typical assets:
 
-- **PCInform-Setup.exe** — recommended installer for end users
+- **PCInform-Setup.exe** — recommended end-user installer (does not include the configurator)
+- **PCInform.Configurator.exe** — optional administrator config editor (download separately when needed)
 - **PCInform.exe** — optional portable binary (when provided)
 - **version.json** — optional metadata for deployments that enable update checks
 
