@@ -12,7 +12,7 @@
     <Product>PC Inform Configurator</Product>
     <Company>pcinform</Company>
     <Description>Administrator tool for editing PC Inform appsettings.json.</Description>
-    <Version>1.1.0</Version>
+    <Version>1.2.0-dev</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
