@@ -82,4 +82,5 @@ public sealed class UpdateSettings
 {
     public bool Enabled { get; set; }
     public string VersionUrl { get; set; } = string.Empty;
+    public bool ShowFooterIndicator { get; set; } = true;
 }

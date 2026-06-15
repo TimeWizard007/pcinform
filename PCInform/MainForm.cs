@@ -56,6 +56,8 @@ internal sealed class MainForm : Form
     private LinkLabel? _englishLink;
     private Label? _languageSeparator;
     private Label _footerLabel = null!;
+    private LinkLabel? _updateIndicatorLink;
+    private ToolTip _footerToolTip = null!;
     private LinkLabel _configLink = null!;
     private LinkLabel _aboutLink = null!;
 
@@ -89,7 +91,13 @@ internal sealed class MainForm : Form
     private async void OnFormShown(object? sender, EventArgs e)
     {
         await RefreshDataAsync();
-        _ = UpdateService.CheckForUpdatesAsync(this);
+        _ = CheckForUpdatesInBackgroundAsync();
+    }
+
+    private async Task CheckForUpdatesInBackgroundAsync()
+    {
+        await UpdateService.CheckForUpdatesAsync().ConfigureAwait(true);
+        UpdateFooterIndicator();
     }
 
     private void InitializeForm()
@@ -184,13 +192,43 @@ internal sealed class MainForm : Form
 
         _footerLabel = new Label
         {
-            Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleCenter,
+            AutoSize = true,
+            TextAlign = ContentAlignment.MiddleLeft,
             BackColor = AppTheme.FooterBackground,
             ForeColor = AppTheme.FooterText,
             Font = _footerFont,
-            Text = AppInfoService.FooterText
+            Text = AppInfoService.FooterText,
+            Margin = new Padding(0, 2, 6, 0)
         };
+
+        _updateIndicatorLink = new LinkLabel
+        {
+            Text = LocalizationManager.UpdateFooterIndicator,
+            AutoSize = true,
+            Visible = false,
+            LinkColor = AppTheme.Accent,
+            ActiveLinkColor = AppTheme.BannerBlue,
+            VisitedLinkColor = AppTheme.Accent,
+            Font = _footerFont,
+            Cursor = Cursors.Hand,
+            LinkBehavior = LinkBehavior.HoverUnderline,
+            Margin = new Padding(0, 2, 0, 0)
+        };
+        _updateIndicatorLink.Click += (_, _) => UpdateService.OpenDownloadPage();
+
+        _footerToolTip = new ToolTip();
+
+        var footerLeftPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            AutoSize = false,
+            BackColor = AppTheme.FooterBackground,
+            Padding = new Padding(12, 0, 0, 0)
+        };
+        footerLeftPanel.Controls.Add(_footerLabel);
+        footerLeftPanel.Controls.Add(_updateIndicatorLink);
 
         _aboutLink = new LinkLabel
         {
@@ -250,7 +288,7 @@ internal sealed class MainForm : Form
         };
         footerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         footerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        footerPanel.Controls.Add(_footerLabel, 0, 0);
+        footerPanel.Controls.Add(footerLeftPanel, 0, 0);
         footerPanel.Controls.Add(footerLinksPanel, 1, 0);
 
         var buttonPanel = new Panel
@@ -903,6 +941,27 @@ internal sealed class MainForm : Form
         }
     }
 
+    private void UpdateFooterIndicator()
+    {
+        if (_updateIndicatorLink is null)
+        {
+            return;
+        }
+
+        var result = UpdateService.LastResult;
+        var showIndicator = result is not null &&
+                            ConfigurationService.Current.Update.ShowFooterIndicator;
+
+        _updateIndicatorLink.Visible = showIndicator;
+        if (!showIndicator)
+        {
+            return;
+        }
+
+        _updateIndicatorLink.Text = LocalizationManager.UpdateFooterIndicator;
+        _footerToolTip.SetToolTip(_updateIndicatorLink, LocalizationManager.UpdateFooterTooltip(result!.RemoteVersion));
+    }
+
     private void LaunchTeamViewer()
     {
         if (string.IsNullOrEmpty(_data.TeamViewerPath))
@@ -929,6 +988,7 @@ internal sealed class MainForm : Form
         Text = LocalizationManager.WindowTitle;
         _bannerLabel.Text = LocalizationManager.BannerTitle;
         _footerLabel.Text = AppInfoService.FooterText;
+        UpdateFooterIndicator();
         _configLink.Text = LocalizationManager.ConfigurationLink;
         _aboutLink.Text = LocalizationManager.AboutLink;
 

@@ -68,6 +68,7 @@ internal sealed class ConfiguratorForm : Form
     private CheckBox _reportIncludeAtera = null!;
 
     private CheckBox _updateEnabled = null!;
+    private CheckBox _updateShowFooterIndicator = null!;
     private TextBox _updateVersionUrl = null!;
 
     public ConfiguratorForm()
@@ -214,9 +215,10 @@ internal sealed class ConfiguratorForm : Form
     {
         var page = new TabPage("Update") { Padding = new Padding(12) };
         var panel = CreateScrollPanel(page);
-        var table = CreateFieldTable(panel, 2);
+        var table = CreateFieldTable(panel, 3);
         _updateEnabled = AddCheckRow(table, 0, "Enable update check");
-        _updateVersionUrl = AddTextRow(table, 1, "Version JSON URL");
+        _updateShowFooterIndicator = AddCheckRow(table, 1, "Show footer update indicator");
+        _updateVersionUrl = AddTextRow(table, 2, "Version JSON URL");
         return page;
     }
 
@@ -460,6 +462,7 @@ internal sealed class ConfiguratorForm : Form
         _reportIncludeAtera.Checked = report.IncludeAtera;
 
         _updateEnabled.Checked = _settings.Update.Enabled;
+        _updateShowFooterIndicator.Checked = _settings.Update.ShowFooterIndicator;
         _updateVersionUrl.Text = _settings.Update.VersionUrl;
     }
 
@@ -523,6 +526,7 @@ internal sealed class ConfiguratorForm : Form
         _settings.Report.IncludeAtera = _reportIncludeAtera.Checked;
 
         _settings.Update.Enabled = _updateEnabled.Checked;
+        _settings.Update.ShowFooterIndicator = _updateShowFooterIndicator.Checked;
         _settings.Update.VersionUrl = _updateVersionUrl.Text.Trim();
     }
 }

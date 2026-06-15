@@ -184,12 +184,17 @@ internal static class LocalizationManager
         ? "Nie udało się uruchomić TeamViewer."
         : "Could not launch TeamViewer.";
 
-    public static string UpdateAvailableTitle => WindowTitle;
+    public static string UpdateFooterIndicator => "⬆️";
 
-    public static string UpdateAvailableMessage(string version, string releaseNotes) =>
+    public static string UpdateFooterTooltip(string version) =>
         CurrentLanguage == AppLanguage.Polish
-            ? $"Dostępna jest nowa wersja {version}.\n\n{releaseNotes}\n\nCzy chcesz pobrać aktualizację?"
-            : $"A new version {version} is available.\n\n{releaseNotes}\n\nDo you want to download the update?";
+            ? $"Dostępna nowa wersja: v{version}\nKliknij, aby otworzyć stronę pobierania."
+            : $"New version available: v{version}\nClick to open download page.";
+
+    public static string UpdateAboutAvailable(string version) =>
+        CurrentLanguage == AppLanguage.Polish
+            ? $"Dostępna nowa wersja: v{version}"
+            : $"New version available: v{version}";
 
     public static string AboutLink => CurrentLanguage == AppLanguage.Polish ? "O aplikacji" : "About";
 

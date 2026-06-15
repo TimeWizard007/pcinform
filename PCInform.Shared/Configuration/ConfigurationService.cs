@@ -128,7 +128,8 @@ public static class ConfigurationService
         Update = new UpdateSettings
         {
             Enabled = settings.Update.Enabled,
-            VersionUrl = settings.Update.VersionUrl
+            VersionUrl = settings.Update.VersionUrl,
+            ShowFooterIndicator = settings.Update.ShowFooterIndicator
         }
     };
 
@@ -311,7 +312,8 @@ public static class ConfigurationService
         Update = new UpdateSettings
         {
             Enabled = false,
-            VersionUrl = string.Empty
+            VersionUrl = string.Empty,
+            ShowFooterIndicator = true
         }
     };
 }

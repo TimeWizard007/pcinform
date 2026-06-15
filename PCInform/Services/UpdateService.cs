@@ -7,19 +7,26 @@ using PCInform.Models;
 
 namespace PCInform.Services;
 
+internal sealed class UpdateCheckResult
+{
+    public required string RemoteVersion { get; init; }
+    public string? DownloadUrl { get; init; }
+}
+
 internal static class UpdateService
 {
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(10) };
 
-    public static async Task CheckForUpdatesAsync(IWin32Window? owner)
-    {
-        var config = ConfigurationService.Current;
-        if (!config.Features.CheckUpdates || !config.Update.Enabled)
-        {
-            return;
-        }
+    public static UpdateCheckResult? LastResult { get; private set; }
 
-        if (string.IsNullOrWhiteSpace(config.Update.VersionUrl))
+    public static bool IsUpdateAvailable => LastResult is not null;
+
+    public static async Task CheckForUpdatesAsync()
+    {
+        LastResult = null;
+
+        var config = ConfigurationService.Current;
+        if (!config.Update.Enabled || string.IsNullOrWhiteSpace(config.Update.VersionUrl))
         {
             return;
         }
@@ -48,34 +55,11 @@ internal static class UpdateService
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(remote.DownloadUrl))
+            LastResult = new UpdateCheckResult
             {
-                return;
-            }
-
-            var language = LocalizationManager.CurrentLanguage;
-            var releaseNotes = language == AppLanguage.Polish
-                ? remote.ReleaseNotesPl
-                : remote.ReleaseNotesEn;
-
-            if (string.IsNullOrWhiteSpace(releaseNotes))
-            {
-                releaseNotes = language == AppLanguage.Polish
-                    ? "Brak informacji o wydaniu."
-                    : "No release notes provided.";
-            }
-
-            var message = LocalizationManager.UpdateAvailableMessage(remote.Version, releaseNotes);
-            var result = ShowUpdateDialog(owner, message);
-
-            if (result == DialogResult.Yes)
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = remote.DownloadUrl,
-                    UseShellExecute = true
-                });
-            }
+                RemoteVersion = remote.Version.Trim(),
+                DownloadUrl = string.IsNullOrWhiteSpace(remote.DownloadUrl) ? null : remote.DownloadUrl.Trim()
+            };
         }
         catch
         {
@@ -83,18 +67,25 @@ internal static class UpdateService
         }
     }
 
-    private static DialogResult ShowUpdateDialog(IWin32Window? owner, string message)
+    public static void OpenDownloadPage()
     {
-        if (owner is Control control && control.InvokeRequired)
+        var url = LastResult?.DownloadUrl;
+        if (string.IsNullOrWhiteSpace(url))
         {
-            return (DialogResult)control.Invoke(() => ShowUpdateDialog(owner, message))!;
+            url = LocalizationManager.AboutGitHubUrl;
         }
 
-        return MessageBox.Show(
-            owner,
-            message,
-            LocalizationManager.UpdateAvailableTitle,
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Information);
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            // Ignore browser launch failures.
+        }
     }
 }

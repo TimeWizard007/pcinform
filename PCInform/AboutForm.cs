@@ -8,6 +8,7 @@ namespace PCInform;
 internal sealed class AboutForm : Form
 {
     private readonly Label _versionLabel;
+    private readonly Label _updateAvailableLabel;
     private readonly Label _descriptionLabel;
     private readonly Label _authorCaptionLabel;
     private readonly Label _projectCaptionLabel;
@@ -58,6 +59,16 @@ internal sealed class AboutForm : Form
             Size = new Size(contentWidth, 20),
             ForeColor = AppTheme.ValueText,
             TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        _updateAvailableLabel = new Label
+        {
+            AutoSize = false,
+            Location = new Point(left, 76),
+            Size = new Size(contentWidth, 18),
+            ForeColor = AppTheme.Accent,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Visible = false
         };
 
         _descriptionLabel = new Label
@@ -156,6 +167,7 @@ internal sealed class AboutForm : Form
 
         Controls.Add(titleLabel);
         Controls.Add(_versionLabel);
+        Controls.Add(_updateAvailableLabel);
         Controls.Add(_descriptionLabel);
         Controls.Add(_authorCaptionLabel);
         Controls.Add(authorValueLabel);
@@ -173,6 +185,7 @@ internal sealed class AboutForm : Form
     {
         Text = LocalizationManager.AboutDialogTitle;
         _versionLabel.Text = $"{LocalizationManager.AboutVersionLabel} v{AppInfoService.Version}";
+        ApplyUpdateAvailability();
         _descriptionLabel.Text = LocalizationManager.AboutDescription;
         _authorCaptionLabel.Text = LocalizationManager.AboutAuthorLabel;
         _projectCaptionLabel.Text = LocalizationManager.AboutGitHubLabel;
@@ -181,6 +194,23 @@ internal sealed class AboutForm : Form
         _licenseValueLabel.Text = $"{LocalizationManager.AboutLicenseName}{Environment.NewLine}{LocalizationManager.AboutLicenseNote}";
         _githubButton.Text = LocalizationManager.AboutGitHubButton;
         _closeButton.Text = LocalizationManager.CloseButton;
+    }
+
+    private void ApplyUpdateAvailability()
+    {
+        const int descriptionTopDefault = 82;
+        const int descriptionTopWithUpdate = 98;
+
+        if (UpdateService.IsUpdateAvailable)
+        {
+            _updateAvailableLabel.Text = LocalizationManager.UpdateAboutAvailable(UpdateService.LastResult!.RemoteVersion);
+            _updateAvailableLabel.Visible = true;
+            _descriptionLabel.Location = new Point(_descriptionLabel.Location.X, descriptionTopWithUpdate);
+            return;
+        }
+
+        _updateAvailableLabel.Visible = false;
+        _descriptionLabel.Location = new Point(_descriptionLabel.Location.X, descriptionTopDefault);
     }
 
     private static void OpenGitHub()
