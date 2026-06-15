@@ -1,0 +1,7 @@
+{
+  "version": "1.2.0-dev",
+  "downloadUrl": "https://github.com/TimeWizard007/pcinform/releases",
+  "mandatory": false,
+  "releaseNotesPl": "Dodano dyskretny wskaźnik aktualizacji oraz status sieci w stopce aplikacji.",
+  "releaseNotesEn": "Added a discreet update indicator and network status in the application footer."
+}
