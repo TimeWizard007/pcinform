@@ -11,7 +11,7 @@
 AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
 AppName={#AppName}
 AppVersion=1.1.0
-AppVerName=PC Inform v1.1.0-dev
+AppVerName=PC Inform v1.1.0-rc1
 AppPublisher=pcinform
 DefaultDirName={autopf}\PCInform
 DefaultGroupName={#AppName}

@@ -19,7 +19,7 @@ internal static class AppInfoService
             var version = assembly.GetName().Version;
             if (version is null)
             {
-                return "1.1.0-dev";
+                return "1.1.0-rc1";
             }
 
             return version.Revision >= 0 && version.Build >= 0
