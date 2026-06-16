@@ -1013,12 +1013,15 @@ internal sealed class MainForm : Form
             return;
         }
 
-        var isOnline = NetworkStatusService.IsOnline;
+        var isOnline = NetworkStatusService.LastResult.IsInternetAvailable;
         _networkStatusLabel.Text = isOnline
             ? LocalizationManager.NetworkStatusOnlineIndicator
             : LocalizationManager.NetworkStatusOfflineIndicator;
         _networkStatusLabel.ForeColor = isOnline ? AppTheme.FooterText : AppTheme.Accent;
-        _footerToolTip.SetToolTip(_networkStatusLabel, LocalizationManager.NetworkStatusTooltip(isOnline));
+        var networkResult = NetworkStatusService.LastResult;
+        _footerToolTip.SetToolTip(
+            _networkStatusLabel,
+            LocalizationManager.NetworkStatusTooltip(networkResult.Internet, networkResult.Dns));
     }
 
     private void UpdateFooterIndicator()
@@ -1041,7 +1044,9 @@ internal sealed class MainForm : Form
         }
 
         _updateIndicatorLink.Text = LocalizationManager.UpdateFooterIndicator;
-        _footerToolTip.SetToolTip(_updateIndicatorLink, LocalizationManager.UpdateFooterTooltip(result!.RemoteVersion));
+        _footerToolTip.SetToolTip(
+            _updateIndicatorLink,
+            LocalizationManager.UpdateFooterTooltip(AppInfoService.Version, result!.RemoteVersion));
     }
 
     private static Font CreateFooterIndicatorFont()

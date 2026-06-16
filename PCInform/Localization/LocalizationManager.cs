@@ -1,4 +1,5 @@
 using PCInform.Configuration;
+using PCInform.Models;
 
 namespace PCInform.Localization;
 
@@ -186,19 +187,49 @@ internal static class LocalizationManager
 
     public static string UpdateFooterIndicator => "⬆️";
 
-    public static string UpdateFooterTooltip(string version) =>
+    public static string UpdateFooterTooltip(string currentVersion, string remoteVersion) =>
         CurrentLanguage == AppLanguage.Polish
-            ? $"Dostępna nowa wersja: v{version}\nKliknij, aby otworzyć stronę pobierania."
-            : $"New version available: v{version}\nClick to open download page.";
+            ? $"Aktualna wersja: v{currentVersion}\nNowa wersja: v{remoteVersion}\nKliknij, aby otworzyć stronę pobierania."
+            : $"Current version: v{currentVersion}\nNew version: v{remoteVersion}\nClick to open download page.";
 
     public static string NetworkStatusOnlineIndicator => "🌐";
 
     public static string NetworkStatusOfflineIndicator => "⚠️";
 
-    public static string NetworkStatusTooltip(bool isOnline) =>
-        CurrentLanguage == AppLanguage.Polish
-            ? (isOnline ? "Połączenie sieciowe aktywne" : "Brak połączenia sieciowego")
-            : (isOnline ? "Network connection available" : "No network connection");
+    public static string NetworkStatusTooltip(NetworkCheckState internet, NetworkCheckState dns)
+    {
+        var internetLine = FormatNetworkCheckLine(
+            CurrentLanguage == AppLanguage.Polish ? "Internet" : "Internet",
+            internet);
+        var dnsLine = FormatNetworkCheckLine(
+            "DNS",
+            dns);
+        return $"{internetLine}\n{dnsLine}";
+    }
+
+    private static string FormatNetworkCheckLine(string label, NetworkCheckState state)
+    {
+        if (CurrentLanguage == AppLanguage.Polish)
+        {
+            var value = state switch
+            {
+                NetworkCheckState.Ok => "OK",
+                NetworkCheckState.Error => "Błąd",
+                NetworkCheckState.NoConnectivity => "Brak połączenia",
+                _ => "Nie sprawdzono"
+            };
+            return $"{label}: {value}";
+        }
+
+        var englishValue = state switch
+        {
+            NetworkCheckState.Ok => "OK",
+            NetworkCheckState.Error => "Error",
+            NetworkCheckState.NoConnectivity => "No connectivity",
+            _ => "Not tested"
+        };
+        return $"{label}: {englishValue}";
+    }
 
     public static string NetworkStatusReportLabel => CurrentLanguage == AppLanguage.Polish
         ? "Status sieci:"

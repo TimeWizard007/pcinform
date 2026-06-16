@@ -1,5 +1,21 @@
 namespace PCInform.Models;
 
+internal enum NetworkCheckState
+{
+    Ok,
+    Error,
+    NoConnectivity,
+    NotTested
+}
+
+internal sealed class NetworkStatusResult
+{
+    public NetworkCheckState Internet { get; init; } = NetworkCheckState.NotTested;
+    public NetworkCheckState Dns { get; init; } = NetworkCheckState.NotTested;
+
+    public bool IsInternetAvailable => Internet == NetworkCheckState.Ok;
+}
+
 internal sealed class RemoteVersionInfo
 {
     public string Version { get; set; } = string.Empty;
