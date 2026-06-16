@@ -208,8 +208,18 @@ internal static class ReportFormatter
             lines.Add($"{LocalizationManager.MachineTypeLabel} {data.MachineType}");
         }
 
+        if (report.IncludeNetworkStatus)
+        {
+            lines.Add($"{LocalizationManager.NetworkStatusReportLabel} {GetNetworkStatusText(language)}");
+        }
+
         return lines;
     }
+
+    private static string GetNetworkStatusText(AppLanguage language) =>
+        NetworkStatusService.IsOnline
+            ? LocalizationManager.NetworkStatusOnlineText
+            : LocalizationManager.NetworkStatusOfflineText;
 
     private static void AppendUserSection(
         List<string> sections,

@@ -59,6 +59,7 @@ public sealed class FeatureSettings
     public bool ShowAteraInGui { get; set; }
     public bool IncludeAteraInReports { get; set; }
     public bool CheckUpdates { get; set; }
+    public bool ShowNetworkStatus { get; set; } = true;
 }
 
 public sealed class ReportSettings
@@ -76,6 +77,7 @@ public sealed class ReportSettings
     public bool IncludeDisplayName { get; set; } = true;
     public bool IncludeTeamViewer { get; set; }
     public bool IncludeAtera { get; set; }
+    public bool IncludeNetworkStatus { get; set; } = true;
 }
 
 public sealed class UpdateSettings

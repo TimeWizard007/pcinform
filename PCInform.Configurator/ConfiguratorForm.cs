@@ -51,6 +51,7 @@ internal sealed class ConfiguratorForm : Form
     private CheckBox _featDetectAtera = null!;
     private CheckBox _featShowAteraInGui = null!;
     private CheckBox _featIncludeAteraInReports = null!;
+    private CheckBox _featShowNetworkStatus = null!;
     private CheckBox _featCheckUpdates = null!;
 
     private CheckBox _reportIncludeComputerName = null!;
@@ -64,6 +65,7 @@ internal sealed class ConfiguratorForm : Form
     private CheckBox _reportIncludeDeviceType = null!;
     private CheckBox _reportIncludeUserLogin = null!;
     private CheckBox _reportIncludeDisplayName = null!;
+    private CheckBox _reportIncludeNetworkStatus = null!;
     private CheckBox _reportIncludeTeamViewer = null!;
     private CheckBox _reportIncludeAtera = null!;
 
@@ -168,7 +170,7 @@ internal sealed class ConfiguratorForm : Form
     {
         var page = new TabPage("Features") { Padding = new Padding(12) };
         var panel = CreateScrollPanel(page);
-        var table = CreateFieldTable(panel, 18);
+        var table = CreateFieldTable(panel, 19);
         _featShowComputerName = AddCheckRow(table, 0, "Show computer name");
         _featShowDomain = AddCheckRow(table, 1, "Show domain");
         _featShowOperatingSystem = AddCheckRow(table, 2, "Show operating system");
@@ -186,7 +188,8 @@ internal sealed class ConfiguratorForm : Form
         _featDetectAtera = AddCheckRow(table, 14, "Detect Atera");
         _featShowAteraInGui = AddCheckRow(table, 15, "Show Atera in UI");
         _featIncludeAteraInReports = AddCheckRow(table, 16, "Include Atera in reports");
-        _featCheckUpdates = AddCheckRow(table, 17, "Check updates");
+        _featShowNetworkStatus = AddCheckRow(table, 17, "Show network status");
+        _featCheckUpdates = AddCheckRow(table, 18, "Check updates");
         return page;
     }
 
@@ -194,7 +197,7 @@ internal sealed class ConfiguratorForm : Form
     {
         var page = new TabPage("Report") { Padding = new Padding(12) };
         var panel = CreateScrollPanel(page);
-        var table = CreateFieldTable(panel, 13);
+        var table = CreateFieldTable(panel, 14);
         _reportIncludeComputerName = AddCheckRow(table, 0, "Include computer name");
         _reportIncludeDomain = AddCheckRow(table, 1, "Include domain");
         _reportIncludeOperatingSystem = AddCheckRow(table, 2, "Include operating system");
@@ -206,8 +209,9 @@ internal sealed class ConfiguratorForm : Form
         _reportIncludeDeviceType = AddCheckRow(table, 8, "Include device type");
         _reportIncludeUserLogin = AddCheckRow(table, 9, "Include user login");
         _reportIncludeDisplayName = AddCheckRow(table, 10, "Include display name");
-        _reportIncludeTeamViewer = AddCheckRow(table, 11, "Include TeamViewer");
-        _reportIncludeAtera = AddCheckRow(table, 12, "Include Atera");
+        _reportIncludeNetworkStatus = AddCheckRow(table, 11, "Include network status");
+        _reportIncludeTeamViewer = AddCheckRow(table, 12, "Include TeamViewer");
+        _reportIncludeAtera = AddCheckRow(table, 13, "Include Atera");
         return page;
     }
 
@@ -444,6 +448,7 @@ internal sealed class ConfiguratorForm : Form
         _featDetectAtera.Checked = features.DetectAtera;
         _featShowAteraInGui.Checked = features.ShowAteraInGui;
         _featIncludeAteraInReports.Checked = features.IncludeAteraInReports;
+        _featShowNetworkStatus.Checked = features.ShowNetworkStatus;
         _featCheckUpdates.Checked = features.CheckUpdates;
 
         var report = _settings.Report;
@@ -458,6 +463,7 @@ internal sealed class ConfiguratorForm : Form
         _reportIncludeDeviceType.Checked = report.IncludeDeviceType;
         _reportIncludeUserLogin.Checked = report.IncludeUserLogin;
         _reportIncludeDisplayName.Checked = report.IncludeDisplayName;
+        _reportIncludeNetworkStatus.Checked = report.IncludeNetworkStatus;
         _reportIncludeTeamViewer.Checked = report.IncludeTeamViewer;
         _reportIncludeAtera.Checked = report.IncludeAtera;
 
@@ -509,6 +515,7 @@ internal sealed class ConfiguratorForm : Form
         _settings.Features.DetectAtera = _featDetectAtera.Checked;
         _settings.Features.ShowAteraInGui = _featShowAteraInGui.Checked;
         _settings.Features.IncludeAteraInReports = _featIncludeAteraInReports.Checked;
+        _settings.Features.ShowNetworkStatus = _featShowNetworkStatus.Checked;
         _settings.Features.CheckUpdates = _featCheckUpdates.Checked;
 
         _settings.Report.IncludeComputerName = _reportIncludeComputerName.Checked;
@@ -522,6 +529,7 @@ internal sealed class ConfiguratorForm : Form
         _settings.Report.IncludeDeviceType = _reportIncludeDeviceType.Checked;
         _settings.Report.IncludeUserLogin = _reportIncludeUserLogin.Checked;
         _settings.Report.IncludeDisplayName = _reportIncludeDisplayName.Checked;
+        _settings.Report.IncludeNetworkStatus = _reportIncludeNetworkStatus.Checked;
         _settings.Report.IncludeTeamViewer = _reportIncludeTeamViewer.Checked;
         _settings.Report.IncludeAtera = _reportIncludeAtera.Checked;
 

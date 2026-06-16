@@ -45,7 +45,8 @@ public static class VisibilityHelper
         report.IncludeUptime ||
         report.IncludeManufacturerModel ||
         report.IncludeSerialNumber ||
-        report.IncludeDeviceType;
+        report.IncludeDeviceType ||
+        report.IncludeNetworkStatus;
 
     public static bool HasAnyUserReportField(ReportSettings report) =>
         report.IncludeUserLogin || report.IncludeDisplayName;

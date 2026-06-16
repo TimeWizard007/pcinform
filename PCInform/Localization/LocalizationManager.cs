@@ -191,6 +191,23 @@ internal static class LocalizationManager
             ? $"Dostępna nowa wersja: v{version}\nKliknij, aby otworzyć stronę pobierania."
             : $"New version available: v{version}\nClick to open download page.";
 
+    public static string NetworkStatusOnlineIndicator => "🌐";
+
+    public static string NetworkStatusOfflineIndicator => "⚠️";
+
+    public static string NetworkStatusTooltip(bool isOnline) =>
+        CurrentLanguage == AppLanguage.Polish
+            ? (isOnline ? "Połączenie sieciowe aktywne" : "Brak połączenia sieciowego")
+            : (isOnline ? "Network connection available" : "No network connection");
+
+    public static string NetworkStatusReportLabel => CurrentLanguage == AppLanguage.Polish
+        ? "Status sieci:"
+        : "Network status:";
+
+    public static string NetworkStatusOnlineText => CurrentLanguage == AppLanguage.Polish ? "online" : "online";
+
+    public static string NetworkStatusOfflineText => CurrentLanguage == AppLanguage.Polish ? "offline" : "offline";
+
     public static string UpdateAboutAvailable(string version) =>
         CurrentLanguage == AppLanguage.Polish
             ? $"Dostępna nowa wersja: v{version}"

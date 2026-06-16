@@ -17,14 +17,16 @@ public static class ConfigurationService
 
     public static void Initialize()
     {
+        AppDiagnosticLog.Write("Config upgrade started");
         Current = LoadSettings();
+        AppDiagnosticLog.Write("Config upgrade completed");
     }
 
     public static AppSettings LoadSettings()
     {
         if (File.Exists(AppPaths.ConfigFilePath))
         {
-            return LoadFromFile(AppPaths.ConfigFilePath) ?? CreateDefaultSettings();
+            return LoadFromFile(AppPaths.ConfigFilePath);
         }
 
         var defaults = CreateDefaultSettings();
@@ -45,7 +47,20 @@ public static class ConfigurationService
             var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? CreateDefaultSettings();
             ApplyLegacySupportFields(json, settings);
             ApplyReportUpgrade(json, settings);
-            return MergeWithDefaults(settings);
+            var addedFields = ApplySchemaUpgrade(json, settings);
+            var merged = MergeWithDefaults(settings);
+
+            if (addedFields.Count > 0)
+            {
+                AppDiagnosticLog.Write($"Missing fields detected: {string.Join(", ", addedFields)}");
+                if (IsGlobalConfigPath(path))
+                {
+                    TrySaveSettings(merged, path);
+                    AppDiagnosticLog.Write("Upgraded config saved to ProgramData");
+                }
+            }
+
+            return merged;
         }
         catch
         {
@@ -60,6 +75,9 @@ public static class ConfigurationService
         var json = JsonSerializer.Serialize(merged, JsonOptions);
         File.WriteAllText(path, json);
     }
+
+    private static bool IsGlobalConfigPath(string path) =>
+        string.Equals(Path.GetFullPath(path), Path.GetFullPath(AppPaths.ConfigFilePath), StringComparison.OrdinalIgnoreCase);
 
     private static void TrySaveSettings(AppSettings settings, string path)
     {
@@ -122,7 +140,8 @@ public static class ConfigurationService
             DetectAtera = settings.Features.DetectAtera,
             ShowAteraInGui = settings.Features.ShowAteraInGui,
             IncludeAteraInReports = settings.Features.IncludeAteraInReports,
-            CheckUpdates = settings.Features.CheckUpdates
+            CheckUpdates = settings.Features.CheckUpdates,
+            ShowNetworkStatus = settings.Features.ShowNetworkStatus
         },
         Report = CloneReportSettings(settings.Report),
         Update = new UpdateSettings
@@ -147,7 +166,8 @@ public static class ConfigurationService
         IncludeUserLogin = report.IncludeUserLogin,
         IncludeDisplayName = report.IncludeDisplayName,
         IncludeTeamViewer = report.IncludeTeamViewer,
-        IncludeAtera = report.IncludeAtera
+        IncludeAtera = report.IncludeAtera,
+        IncludeNetworkStatus = report.IncludeNetworkStatus
     };
 
     private static void ApplyLegacySupportFields(string json, AppSettings settings)
@@ -198,13 +218,90 @@ public static class ConfigurationService
                 IncludeUserLogin = features.ShowUserLogin,
                 IncludeDisplayName = features.ShowDisplayName,
                 IncludeTeamViewer = features.ShowTeamViewer,
-                IncludeAtera = features.IncludeAteraInReports
+                IncludeAtera = features.IncludeAteraInReports,
+                IncludeNetworkStatus = features.ShowNetworkStatus
             };
         }
         catch
         {
             settings.Report ??= CreateDefaultSettings().Report;
         }
+    }
+
+    private static List<string> ApplySchemaUpgrade(string json, AppSettings settings)
+    {
+        var addedFields = new List<string>();
+
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+
+            settings.Features ??= new FeatureSettings();
+            settings.Report ??= CreateDefaultSettings().Report;
+            settings.Update ??= new UpdateSettings();
+
+            if (root.TryGetProperty("features", out var featuresElement))
+            {
+                if (!HasJsonProperty(featuresElement, "showNetworkStatus"))
+                {
+                    settings.Features.ShowNetworkStatus = true;
+                    addedFields.Add("features.showNetworkStatus");
+                }
+            }
+            else
+            {
+                settings.Features.ShowNetworkStatus = true;
+                addedFields.Add("features.showNetworkStatus");
+            }
+
+            if (root.TryGetProperty("report", out var reportElement))
+            {
+                if (!HasJsonProperty(reportElement, "includeNetworkStatus"))
+                {
+                    settings.Report.IncludeNetworkStatus = true;
+                    addedFields.Add("report.includeNetworkStatus");
+                }
+            }
+            else
+            {
+                settings.Report.IncludeNetworkStatus = true;
+                addedFields.Add("report.includeNetworkStatus");
+            }
+
+            if (root.TryGetProperty("update", out var updateElement))
+            {
+                if (!HasJsonProperty(updateElement, "showFooterIndicator"))
+                {
+                    settings.Update.ShowFooterIndicator = true;
+                    addedFields.Add("update.showFooterIndicator");
+                }
+            }
+            else
+            {
+                settings.Update.ShowFooterIndicator = true;
+                addedFields.Add("update.showFooterIndicator");
+            }
+        }
+        catch
+        {
+            // Ignore schema upgrade failures.
+        }
+
+        return addedFields;
+    }
+
+    private static bool HasJsonProperty(JsonElement element, string propertyName)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            if (property.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static AppSettings MergeWithDefaults(AppSettings settings)
@@ -291,7 +388,8 @@ public static class ConfigurationService
             DetectAtera = false,
             ShowAteraInGui = false,
             IncludeAteraInReports = false,
-            CheckUpdates = false
+            CheckUpdates = false,
+            ShowNetworkStatus = true
         },
         Report = new ReportSettings
         {
@@ -307,7 +405,8 @@ public static class ConfigurationService
             IncludeUserLogin = true,
             IncludeDisplayName = true,
             IncludeTeamViewer = false,
-            IncludeAtera = false
+            IncludeAtera = false,
+            IncludeNetworkStatus = true
         },
         Update = new UpdateSettings
         {

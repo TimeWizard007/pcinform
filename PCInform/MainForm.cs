@@ -56,6 +56,7 @@ internal sealed class MainForm : Form
     private LinkLabel? _englishLink;
     private Label? _languageSeparator;
     private Label _footerLabel = null!;
+    private Label? _networkStatusLabel;
     private LinkLabel? _updateIndicatorLink;
     private ToolTip _footerToolTip = null!;
     private LinkLabel _configLink = null!;
@@ -91,13 +92,29 @@ internal sealed class MainForm : Form
     private async void OnFormShown(object? sender, EventArgs e)
     {
         await RefreshDataAsync();
-        _ = CheckForUpdatesInBackgroundAsync();
+        _ = RefreshFooterIndicatorsAsync();
     }
 
-    private async Task CheckForUpdatesInBackgroundAsync()
+    private async Task RefreshFooterIndicatorsAsync()
     {
+        await NetworkStatusService.CheckAsync().ConfigureAwait(true);
         await UpdateService.CheckForUpdatesAsync().ConfigureAwait(true);
+
+        if (InvokeRequired)
+        {
+            BeginInvoke(RefreshFooterIndicators);
+            return;
+        }
+
+        RefreshFooterIndicators();
+    }
+
+    private void RefreshFooterIndicators()
+    {
+        UpdateNetworkStatusIndicator();
         UpdateFooterIndicator();
+        AppDiagnosticLog.Write($"Footer network indicator visible: {_networkStatusLabel?.Visible == true}");
+        AppDiagnosticLog.Write($"Footer update indicator visible: {_updateIndicatorLink?.Visible == true}");
     }
 
     private void InitializeForm()
@@ -216,6 +233,16 @@ internal sealed class MainForm : Form
         };
         _updateIndicatorLink.Click += (_, _) => UpdateService.OpenDownloadPage();
 
+        _networkStatusLabel = new Label
+        {
+            AutoSize = true,
+            Visible = false,
+            Font = _footerFont,
+            ForeColor = AppTheme.FooterText,
+            Margin = new Padding(6, 2, 6, 0),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
         _footerToolTip = new ToolTip();
 
         var footerLeftPanel = new FlowLayoutPanel
@@ -228,6 +255,7 @@ internal sealed class MainForm : Form
             Padding = new Padding(12, 0, 0, 0)
         };
         footerLeftPanel.Controls.Add(_footerLabel);
+        footerLeftPanel.Controls.Add(_networkStatusLabel);
         footerLeftPanel.Controls.Add(_updateIndicatorLink);
 
         _aboutLink = new LinkLabel
@@ -941,6 +969,28 @@ internal sealed class MainForm : Form
         }
     }
 
+    private void UpdateNetworkStatusIndicator()
+    {
+        if (_networkStatusLabel is null)
+        {
+            return;
+        }
+
+        var showIndicator = ConfigurationService.Current.Features.ShowNetworkStatus;
+        _networkStatusLabel.Visible = showIndicator;
+        if (!showIndicator)
+        {
+            return;
+        }
+
+        var isOnline = NetworkStatusService.IsOnline;
+        _networkStatusLabel.Text = isOnline
+            ? LocalizationManager.NetworkStatusOnlineIndicator
+            : LocalizationManager.NetworkStatusOfflineIndicator;
+        _networkStatusLabel.ForeColor = isOnline ? AppTheme.FooterText : AppTheme.Accent;
+        _footerToolTip.SetToolTip(_networkStatusLabel, LocalizationManager.NetworkStatusTooltip(isOnline));
+    }
+
     private void UpdateFooterIndicator()
     {
         if (_updateIndicatorLink is null)
@@ -988,7 +1038,7 @@ internal sealed class MainForm : Form
         Text = LocalizationManager.WindowTitle;
         _bannerLabel.Text = LocalizationManager.BannerTitle;
         _footerLabel.Text = AppInfoService.FooterText;
-        UpdateFooterIndicator();
+        RefreshFooterIndicators();
         _configLink.Text = LocalizationManager.ConfigurationLink;
         _aboutLink.Text = LocalizationManager.AboutLink;
 

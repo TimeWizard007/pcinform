@@ -26,10 +26,15 @@ internal static class UpdateService
         LastResult = null;
 
         var config = ConfigurationService.Current;
+        AppDiagnosticLog.Write("Update check started");
+
         if (!config.Update.Enabled || string.IsNullOrWhiteSpace(config.Update.VersionUrl))
         {
+            AppDiagnosticLog.Write("Update check skipped: disabled or version URL missing");
             return;
         }
+
+        AppDiagnosticLog.Write($"Version URL: {config.Update.VersionUrl}");
 
         try
         {
@@ -41,17 +46,20 @@ internal static class UpdateService
 
             if (remote is null || string.IsNullOrWhiteSpace(remote.Version))
             {
+                AppDiagnosticLog.Write("Update result: invalid version.json payload");
                 return;
             }
 
-            if (!Version.TryParse(AppInfoService.Version, out var currentVersion) ||
-                !Version.TryParse(remote.Version, out var remoteVersion))
+            if (!VersionHelper.TryParseLoose(AppInfoService.Version, out var currentVersion) ||
+                !VersionHelper.TryParseLoose(remote.Version, out var remoteVersion))
             {
+                AppDiagnosticLog.Write("Update result: version parse failed");
                 return;
             }
 
             if (remoteVersion <= currentVersion)
             {
+                AppDiagnosticLog.Write("Update result: no newer version");
                 return;
             }
 
@@ -60,10 +68,11 @@ internal static class UpdateService
                 RemoteVersion = remote.Version.Trim(),
                 DownloadUrl = string.IsNullOrWhiteSpace(remote.DownloadUrl) ? null : remote.DownloadUrl.Trim()
             };
+            AppDiagnosticLog.Write($"Update result: newer version available ({LastResult.RemoteVersion})");
         }
-        catch
+        catch (Exception ex)
         {
-            // Do not block startup when update check fails.
+            AppDiagnosticLog.Write($"Update check failed: {ex.Message}");
         }
     }
 
