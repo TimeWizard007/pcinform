@@ -1,5 +1,5 @@
 {
-  "version": "1.2.1-dev",
+  "version": "1.2.2-dev",
   "downloadUrl": "https://github.com/TimeWizard007/pcinform/releases",
   "mandatory": false,
   "releaseNotesPl": "Poprawiono tooltipy statusu sieci i aktualizacji.",
