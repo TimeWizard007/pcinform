@@ -50,14 +50,27 @@ internal static class UpdateService
                 return;
             }
 
-            if (!VersionHelper.TryParseLoose(AppInfoService.Version, out var currentVersion) ||
-                !VersionHelper.TryParseLoose(remote.Version, out var remoteVersion))
+            var currentRaw = AppInfoService.Version;
+            var remoteRaw = remote.Version.Trim();
+
+            AppDiagnosticLog.Write($"Current version raw: {currentRaw}");
+            AppDiagnosticLog.Write($"Remote version raw: {remoteRaw}");
+
+            if (!VersionHelper.TryParseLoose(currentRaw, out var currentVersion) ||
+                !VersionHelper.TryParseLoose(remoteRaw, out var remoteVersion))
             {
                 AppDiagnosticLog.Write("Update result: version parse failed");
                 return;
             }
 
-            if (remoteVersion <= currentVersion)
+            AppDiagnosticLog.Write($"Current version parsed: {currentVersion}");
+            AppDiagnosticLog.Write($"Remote version parsed: {remoteVersion}");
+
+            var comparison = remoteVersion.CompareTo(currentVersion);
+            AppDiagnosticLog.Write($"Comparison result: {comparison}");
+            AppDiagnosticLog.Write($"Current < Remote = {comparison > 0}");
+
+            if (comparison <= 0)
             {
                 AppDiagnosticLog.Write("Update result: no newer version");
                 return;
