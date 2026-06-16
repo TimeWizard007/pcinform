@@ -58,11 +58,15 @@ Implementation entry points:
 On startup and when loading config in the configurator, `ConfigurationService`:
 
 - Merges missing top-level sections with safe defaults (`application`, `support`, `features`, `report`, `update`)
+- Adds missing v1.2 fields when absent from older JSON (`features.showNetworkStatus`, `report.includeNetworkStatus`, `update.showFooterIndicator`)
 - Adds a missing `report` section by deriving values from existing `features` flags (preserves prior report behaviour for older configs)
+- Saves upgraded global config back to `C:\ProgramData\PCInform\appsettings.json` only when new fields were added
 - Preserves all existing field values and does not remove unknown JSON properties on deserialize
 - Does not overwrite an existing `appsettings.json` on disk unless the app or configurator explicitly saves
 
 UI visibility is controlled by `features.show*`. Clipboard and **Report problem** content uses `report.include*` independently.
+
+Diagnostic logs (when writable): `C:\ProgramData\PCInform\Logs\PCInform.log`
 
 ### 2. Per-user `settings.json` (language only)
 
@@ -188,10 +192,10 @@ Example `version.json`: [version.example.json](version.example.json)
 
 Relationship to `appsettings.json`:
 
-- **`appsettings.json`** on each PC decides *whether* to check for updates (`features.checkUpdates`, `update.enabled`) and *where* (`update.versionUrl`)
+- **`appsettings.json`** on each PC decides *whether* to check for updates (`update.enabled`, `update.versionUrl`, `update.showFooterIndicator`) and branding/features/report visibility
 - **`version.json`** on a server or GitHub Release describes *what* the latest published version is and where to download it
 
-PC Inform compares remote `version.json` to the running assembly version and opens `downloadUrl` in the browser on user confirmation. It does **not** auto-install or run an updater.
+PC Inform compares remote `version.json` to the running assembly version using semantic version rules. When a newer version is available, it shows a discreet footer indicator (and About notice). Clicking the indicator opens `downloadUrl` in the browser. It does **not** auto-install, show a startup popup, or run an updater.
 
 ## Key components (quick reference)
 
@@ -201,7 +205,9 @@ PC Inform compares remote `version.json` to the running assembly version and ope
 | Main UI | `MainForm.cs` |
 | Reports / clipboard | `Services/ReportFormatter.cs` |
 | Email drafts | `Services/MailHelper.cs`, `OutlookMailService.cs` |
-| Update check | `Services/UpdateService.cs` (no-op when disabled) |
+| Update check | `Services/UpdateService.cs`, `Services/VersionHelper.cs` (informational footer indicator) |
+| Network status | `Services/NetworkStatusService.cs` (footer indicator) |
+| Diagnostics | `PCInform.Shared/Configuration/AppDiagnosticLog.cs` |
 | System info | `Services/SystemInfoService.cs` |
 
 ## License

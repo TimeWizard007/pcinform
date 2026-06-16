@@ -13,7 +13,8 @@ Polish and English UI are supported. Branding, contact details, visible fields, 
 - **Email integration:** Outlook Classic draft when a MAPI profile exists, with `mailto:` fallback; CC/BCC used when configured
 - **Localization:** Polish and English; language switcher can be limited to one language by configuration
 - **About dialog:** version, description, author, and project link
-- **Optional update notice:** administrators can enable a remote version check (disabled by default; opens a download page in the browser only — no automatic install)
+- **Optional update notice:** administrators can enable an informational remote version check (disabled by default); when a newer version exists, a discreet **⬆️** indicator appears in the footer — no popup, no automatic install
+- **Network status:** optional footer indicator (🌐 / ⚠️) with Internet and DNS tooltips when `features.showNetworkStatus` is enabled
 
 ## Requirements
 
@@ -71,9 +72,9 @@ End users normally do not need the configurator — IT administrators prepare th
 |---------|---------|
 | **Application** | App name, window title, banner text, default language, accent color, enabled languages |
 | **Support** | Company name, support email/phone/mobile/website, CC/BCC, subject prefixes, contact visibility flags |
-| **Features** | Which computer/user fields are shown in the main window, optional TeamViewer/Atera integration, update-check permission |
-| **Report** | Which fields are included in copied clipboard reports and **Report problem** email content |
-| **Update** | Whether to check a remote `version.json` and which URL to use (disabled by default) |
+| **Features** | Main window visibility (`features.show*`), optional TeamViewer/Atera integration, network status footer indicator |
+| **Report** | Clipboard and **Report problem** email content (`report.include*`) |
+| **Update** | Informational update check via remote `version.json` and footer indicator (disabled by default) |
 
 **Display vs report:** `features.show*` flags control **main window visibility only**. The separate `report.include*` flags control **clipboard reports** and **Report problem** email content. You can show a minimal UI while still including full diagnostics in reports, or the reverse. These flags do **not** stop the application from collecting system information internally.
 
@@ -123,6 +124,7 @@ Organizations can show a **minimal** UI (banner + contact + Report problem) or a
 
 - Computer: `showComputerName`, `showDomain`, `showOperatingSystem`, `showIpAddress`, `showDnsServers`, `showUptime`, `showManufacturerModel`, `showSerialNumber`, `showDeviceType`
 - User: `showUserLogin`, `showDisplayName`
+- Footer: `showNetworkStatus` (network status indicator; default **true**)
 - TeamViewer section: `showTeamViewerSection` (default **false**)
 
 Disabled `show*` fields are omitted from the **main window** only.
@@ -131,7 +133,7 @@ Disabled `show*` fields are omitted from the **main window** only.
 
 Controls which fields appear in **copied clipboard reports** and **Report problem** email drafts (default **true** unless noted):
 
-- Computer/user: `includeComputerName`, `includeDomain`, `includeOperatingSystem`, `includeIpAddress`, `includeDnsServers`, `includeUptime`, `includeManufacturerModel`, `includeSerialNumber`, `includeDeviceType`, `includeUserLogin`, `includeDisplayName`
+- Computer/user: `includeComputerName`, `includeDomain`, `includeOperatingSystem`, `includeIpAddress`, `includeDnsServers`, `includeUptime`, `includeManufacturerModel`, `includeSerialNumber`, `includeDeviceType`, `includeUserLogin`, `includeDisplayName`, `includeNetworkStatus`
 - Agents: `includeTeamViewer`, `includeAtera` (default **false**)
 
 When upgrading from older configs without a `report` section, PC Inform derives initial report flags from the previous `features` visibility settings so existing deployments keep similar report content.
@@ -145,22 +147,25 @@ When upgrading from older configs without a `report` section, PC Inform derives 
 | `detectAtera` | Detect Atera agent |
 | `showAteraInGui` | Show Atera in the UI |
 | `includeAteraInReports` | Legacy report flag (superseded by `report.includeAtera`; kept for compatibility) |
-| `checkUpdates` | Allow update check on startup |
+| `checkUpdates` | Legacy flag (kept for compatibility; update checks are controlled by `update.enabled`) |
 
 ### Update (`update`)
 
-Update checking is **disabled by default**. PC Inform does not install updates automatically.
+Update checking is **disabled by default** and **informational only**. PC Inform does not download or install updates automatically and does not show a startup popup.
+
+When enabled, PC Inform checks `versionUrl` silently in the background. If a newer version is available and `showFooterIndicator` is **true** (default), a discreet **⬆️** indicator appears in the footer. Clicking it opens the download URL in the default browser (or the project GitHub page if no URL is set). The About dialog also shows a short notice when an update is available.
 
 | Setting | Purpose |
 |---------|---------|
-| `enabled` | Master switch for update check (default `false`) |
+| `enabled` | Master switch for background update check (default `false`) |
 | `versionUrl` | URL of remote `version.json` (default empty) |
-
-Both `update.enabled` and `features.checkUpdates` must be enabled for a check to run. When a newer version is found, the user sees a Yes/No dialog; choosing Yes opens the download URL in the default browser.
+| `showFooterIndicator` | Show footer **⬆️** when a newer version is available (default `true`) |
 
 Example remote metadata format: [docs/version.example.json](docs/version.example.json).
 
 Administrators who enable updates must host `version.json` and point `versionUrl` to it. End users normally should not change update settings.
+
+Diagnostic logs (when writable): `C:\ProgramData\PCInform\Logs\PCInform.log`
 
 ## GitHub Releases
 
@@ -180,7 +185,8 @@ Download the installer from the latest release unless your IT team provides an i
 ## Security notes
 
 - No secrets or private URLs are embedded in the application.
-- Update downloads open in the browser only; installers are never run automatically.
+- Update checks are informational only: a footer indicator and About notice — no automatic install and no startup popup
+- Optional network status indicator in the footer (Internet/DNS tooltips)
 - Company, support, and feature configuration is machine-wide; only UI language preference is per user.
 
 ## License

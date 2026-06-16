@@ -2,8 +2,6 @@
 
 This document describes how maintainers prepare, build, and publish PC Inform releases. End-user documentation is in the [README](../README.md). Developer context is in [DEVELOPER.md](DEVELOPER.md).
 
-**Current status:** development builds only — no GitHub release has been published for the latest changes yet. Automatic in-app update installation is **not** implemented; update checks (when enabled) only notify the user and open a download URL in the browser.
-
 ## Overview
 
 A release consists of:
@@ -12,7 +10,7 @@ A release consists of:
 2. A GitHub Release with attached assets
 3. Optional hosted `version.json` for organizations that enable update checks in `appsettings.json`
 
-PC Inform does **not** auto-install updates. When update checking is enabled, the app only notifies the user and opens a download URL in the browser.
+PC Inform does **not** auto-install updates. When update checking is enabled, the app checks silently in the background and shows a discreet footer **⬆️** indicator when a newer version exists. Clicking the indicator opens the download URL in the browser.
 
 ## Configuration vs release metadata
 
@@ -22,23 +20,24 @@ Two separate files serve different roles:
 
 - **Location:** `C:\ProgramData\PCInform\appsettings.json`
 - **Audience:** IT administrators / deployment
-- **Purpose:** branding, contacts, feature flags, and whether/how to check for updates
+- **Purpose:** branding, contacts, UI visibility (`features`), report content (`report`), network/update footer indicators, and whether/how to check for updates
 
 Relevant update settings:
 
 ```json
 {
   "features": {
-    "checkUpdates": false
+    "showNetworkStatus": true
   },
   "update": {
     "enabled": false,
-    "versionUrl": ""
+    "versionUrl": "",
+    "showFooterIndicator": true
   }
 }
 ```
 
-Both `features.checkUpdates` and `update.enabled` must be `true`, and `update.versionUrl` must point to a valid URL, for the application to perform a check on startup.
+`update.enabled` must be **true** and `update.versionUrl` must point to a valid URL for a background check on startup. When a newer version is found and `showFooterIndicator` is **true**, the footer shows **⬆️** (no popup).
 
 Public defaults in [appsettings.example.json](../appsettings.example.json) keep update checking **disabled**.
 
@@ -46,19 +45,19 @@ Public defaults in [appsettings.example.json](../appsettings.example.json) keep 
 
 - **Location:** URL chosen by the maintainer or organization (GitHub Release asset, static web server, etc.)
 - **Audience:** PC Inform instances configured with `update.versionUrl`
-- **Purpose:** advertise latest version, download link, optional release notes
+- **Purpose:** advertise latest version and download link
 
 Example: [version.example.json](version.example.json)
 
 | Field | Purpose |
 |-------|---------|
-| `version` | Latest published version (semver string, compared to running app) |
+| `version` | Latest published version (semver string, compared semantically to running app) |
 | `downloadUrl` | Browser download link (e.g. GitHub Release asset URL) |
 | `sha256` | Optional integrity hash (informational; app does not verify automatically) |
 | `mandatory` | Reserved for future use; not used for forced install |
-| `releaseNotesPl`, `releaseNotesEn` | Shown in the update dialog when a newer version exists |
+| `releaseNotesPl`, `releaseNotesEn` | Optional; not shown in a startup dialog (informational update UX uses footer/About only) |
 
-**Relationship:** `appsettings.json` controls *if* and *where* to look; `version.json` describes *what* is available. Organizations host or reference `version.json`; administrators set `update.versionUrl` in deployed `appsettings.json`.
+**Relationship:** `appsettings.json` controls *if*, *where*, and *how* to notify; `version.json` describes *what* is available.
 
 ## Preparing a release
 
@@ -122,9 +121,9 @@ Output: `PCInform-Setup.exe` (in the installer output folder configured by Inno 
 
 The end-user installer:
 
-- Installs for all users to `C:\Program Files\PCInform\` (`{autopf}\PCInform`)
-- Requires administrator privileges
-- Installs `PCInform.exe` and its required publish files only
+- Installs for **all users** to `C:\Program Files\PCInform\` (`{autopf}\PCInform`)
+- Requires **administrator** privileges
+- Installs **`PCInform.exe` and its required publish files only**
 - Does **not** install `PCInform.Configurator.exe`
 - Adds an all-users Start Menu shortcut for **PC Inform**
 - Optional all-users desktop shortcut for **PC Inform** only
@@ -132,8 +131,6 @@ The end-user installer:
   - from `appsettings.json` next to the setup executable, if present
   - otherwise from `appsettings.example.json`
 - Never overwrites existing `C:\ProgramData\PCInform\appsettings.json` during upgrade
-- Preserves existing global configuration on upgrade
-- Replaces the application executable
 
 ### Do not commit binaries
 
@@ -149,7 +146,7 @@ Distribute these via GitHub Releases only.
 
 1. Open the repository on GitHub: `https://github.com/TimeWizard007/pcinform`
 2. **Releases** → **Draft a new release**
-3. **Choose a tag:** create tag `vX.Y.Z` matching `PCInform.csproj` version (e.g. `v1.0.1`)
+3. **Choose a tag:** create tag `vX.Y.Z` matching `PCInform.csproj` version (e.g. `v1.2.0`)
 4. **Release title:** `PC Inform vX.Y.Z`
 5. **Description:** copy relevant section from `CHANGELOG.md`
 6. **Attach assets:**
@@ -164,7 +161,7 @@ Distribute these via GitHub Releases only.
 After upload, GitHub provides stable download URLs, for example:
 
 ```
-https://github.com/TimeWizard007/pcinform/releases/download/v1.0.1/PCInform-Setup.exe
+https://github.com/TimeWizard007/pcinform/releases/download/v1.2.0/PCInform-Setup.exe
 ```
 
 Use this pattern in `version.json` → `downloadUrl`.
@@ -174,23 +171,23 @@ Use this pattern in `version.json` → `downloadUrl`.
 When you publish a release and want update-aware deployments to find it:
 
 1. Copy [version.example.json](version.example.json) as a starting point.
-2. Set `version` to the new release (e.g. `1.0.1`).
+2. Set `version` to the new release (e.g. `1.2.0`).
 3. Set `downloadUrl` to the GitHub Release asset URL for the installer.
-4. Optionally set `sha256` (hash of the installer file) and localized `releaseNotesPl` / `releaseNotesEn`.
+4. Optionally set `sha256` (hash of the installer file) and localized release notes.
 5. Host the file:
    - **Option A:** Attach `version.json` to the GitHub Release and use that asset URL as `versionUrl`
    - **Option B:** Publish to a static URL your organization controls (CDN, internal web server)
 
-Example for release `v1.0.1`:
+Example for release `v1.2.0`:
 
 ```json
 {
-  "version": "1.0.1",
-  "downloadUrl": "https://github.com/TimeWizard007/pcinform/releases/download/v1.0.1/PCInform-Setup.exe",
+  "version": "1.2.0",
+  "downloadUrl": "https://github.com/TimeWizard007/pcinform/releases/download/v1.2.0/PCInform-Setup.exe",
   "sha256": "",
   "mandatory": false,
-  "releaseNotesPl": "Poprawki i usprawnienia.",
-  "releaseNotesEn": "Fixes and improvements."
+  "releaseNotesPl": "Wskaźnik statusu sieci i dyskretne powiadomienie o aktualizacji.",
+  "releaseNotesEn": "Network status indicator and discreet update notice."
 }
 ```
 
@@ -198,12 +195,10 @@ Administrators enable checking in deployed `appsettings.json`:
 
 ```json
 {
-  "features": {
-    "checkUpdates": true
-  },
   "update": {
     "enabled": true,
-    "versionUrl": "https://github.com/TimeWizard007/pcinform/releases/download/v1.0.1/version.json"
+    "versionUrl": "https://github.com/TimeWizard007/pcinform/releases/download/v1.2.0/version.json",
+    "showFooterIndicator": true
   }
 }
 ```
@@ -215,6 +210,7 @@ Update `versionUrl` when you move to a canonical “latest” URL, or repoint de
 - [ ] Git tag `vX.Y.Z` matches assembly version
 - [ ] `CHANGELOG.md` updated
 - [ ] `PCInform-Setup.exe` attached to GitHub Release
+- [ ] Optional `PCInform.Configurator.exe` attached separately
 - [ ] Release notes visible on GitHub
 - [ ] `version.json` updated/hosted if update checks are used
 - [ ] No binaries committed to the source repository
@@ -222,6 +218,7 @@ Update `versionUrl` when you move to a canonical “latest” URL, or repoint de
 ## What PC Inform does not do
 
 - No automatic download or install of updates
+- No startup Yes/No update popup
 - No background updater or launcher
 - No SMTP or server-side email
-- Update failure never blocks application startup
+- Update or network check failure never blocks application startup
