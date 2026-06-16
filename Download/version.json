@@ -1,7 +1,7 @@
 {
-  "version": "1.2.1",
+  "version": "1.2.1-dev",
   "downloadUrl": "https://github.com/TimeWizard007/pcinform/releases",
   "mandatory": false,
-  "releaseNotesPl": "Test wskaźnika aktualizacji.",
-  "releaseNotesEn": "Update indicator test."
+  "releaseNotesPl": "Poprawiono tooltipy statusu sieci i aktualizacji.",
+  "releaseNotesEn": "Improved network and update status tooltips."
 }
