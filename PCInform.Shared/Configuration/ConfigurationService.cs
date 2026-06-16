@@ -17,9 +17,22 @@ public static class ConfigurationService
 
     public static void Initialize()
     {
-        AppDiagnosticLog.Write("Config upgrade started");
+        AppDiagnosticLog.Initialize();
+        AppDiagnosticLog.Write("Application startup");
+        AppDiagnosticLog.Write($"Config path: {AppPaths.ConfigFilePath}");
+
         Current = LoadSettings();
-        AppDiagnosticLog.Write("Config upgrade completed");
+        LogCurrentConfigState();
+        AppDiagnosticLog.Write("Config load completed");
+    }
+
+    private static void LogCurrentConfigState()
+    {
+        AppDiagnosticLog.Write($"Features.ShowNetworkStatus = {Current.Features.ShowNetworkStatus}");
+        AppDiagnosticLog.Write($"Features.CheckUpdates = {Current.Features.CheckUpdates}");
+        AppDiagnosticLog.Write($"Update.Enabled = {Current.Update.Enabled}");
+        AppDiagnosticLog.Write($"Update.VersionUrl = {Current.Update.VersionUrl}");
+        AppDiagnosticLog.Write($"Update.ShowFooterIndicator = {Current.Update.ShowFooterIndicator}");
     }
 
     public static AppSettings LoadSettings()
@@ -44,6 +57,7 @@ public static class ConfigurationService
             }
 
             var json = File.ReadAllText(path);
+            AppDiagnosticLog.Write($"Loading config from: {path}");
             var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? CreateDefaultSettings();
             ApplyLegacySupportFields(json, settings);
             ApplyReportUpgrade(json, settings);
@@ -58,6 +72,10 @@ public static class ConfigurationService
                     TrySaveSettings(merged, path);
                     AppDiagnosticLog.Write("Upgraded config saved to ProgramData");
                 }
+            }
+            else
+            {
+                AppDiagnosticLog.Write("Config schema upgrade: no missing fields");
             }
 
             return merged;
