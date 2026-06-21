@@ -52,7 +52,6 @@ public static class VisibilityHelper
         report.IncludeUserLogin || report.IncludeDisplayName;
 
     public static bool HasAnyReportContent(ReportSettings report, SupportSettings support) =>
-        IsContactSectionVisible(support) ||
         HasAnyComputerReportField(report) ||
         HasAnyUserReportField(report) ||
         report.IncludeTeamViewer ||

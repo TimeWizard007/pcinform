@@ -19,7 +19,6 @@ internal static class ReportFormatter
     private static string FormatPolishClipboard(SystemInfoData data)
     {
         var sections = new List<string>();
-        AppendContactSection(sections, AppLanguage.Polish);
         AppendComputerSection(sections, data, AppLanguage.Polish);
         AppendUserSection(sections, data, AppLanguage.Polish);
         AppendAgentSection(sections, data, AppLanguage.Polish);
@@ -29,7 +28,6 @@ internal static class ReportFormatter
     private static string FormatEnglishClipboard(SystemInfoData data)
     {
         var sections = new List<string>();
-        AppendContactSection(sections, AppLanguage.English);
         AppendComputerSection(sections, data, AppLanguage.English);
         AppendUserSection(sections, data, AppLanguage.English);
         AppendAgentSection(sections, data, AppLanguage.English);
@@ -53,7 +51,6 @@ internal static class ReportFormatter
             """
         };
 
-        AppendContactSection(sections, AppLanguage.Polish, inline: true);
         AppendComputerSection(sections, data, AppLanguage.Polish, inline: true);
         AppendUserSection(sections, data, AppLanguage.Polish, inline: true);
         AppendAgentSection(sections, data, AppLanguage.Polish, inline: true);
@@ -77,60 +74,10 @@ internal static class ReportFormatter
             """
         };
 
-        AppendContactSection(sections, AppLanguage.English, inline: true);
         AppendComputerSection(sections, data, AppLanguage.English, inline: true);
         AppendUserSection(sections, data, AppLanguage.English, inline: true);
         AppendAgentSection(sections, data, AppLanguage.English, inline: true);
         return string.Join('\n', sections).TrimEnd() + '\n';
-    }
-
-    private static void AppendContactSection(List<string> sections, AppLanguage language, bool inline = false)
-    {
-        var support = ConfigurationService.Current.Support;
-        var lines = BuildContactLines(support, language);
-        if (lines.Count == 0)
-        {
-            return;
-        }
-
-        if (inline)
-        {
-            sections.Add(language == AppLanguage.Polish ? "## KONTAKT" : "## CONTACT");
-            sections.Add(string.Join('\n', lines));
-            return;
-        }
-
-        sections.Add(language == AppLanguage.Polish
-            ? "---------------------------------\nKONTAKT\n---------------------------------"
-            : "---------------------------------\nCONTACT\n---------------------------------");
-        sections.Add(string.Join('\n', lines));
-    }
-
-    private static List<string> BuildContactLines(SupportSettings support, AppLanguage language)
-    {
-        var lines = new List<string>();
-
-        if (VisibilityHelper.IsEmailVisible(support))
-        {
-            lines.Add($"{LocalizationManager.EmailLabel} {support.EmailTo}");
-        }
-
-        if (VisibilityHelper.IsPhoneVisible(support))
-        {
-            lines.Add($"{LocalizationManager.HotlineLabel} {support.Phone}");
-        }
-
-        if (VisibilityHelper.IsMobilePhoneVisible(support))
-        {
-            lines.Add($"{LocalizationManager.MobilePhoneLabel} {support.MobilePhone}");
-        }
-
-        if (VisibilityHelper.IsWebsiteVisible(support))
-        {
-            lines.Add($"{LocalizationManager.WebsiteLabel} {support.WebsiteUrl}");
-        }
-
-        return lines;
     }
 
     private static void AppendComputerSection(
