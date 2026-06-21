@@ -2,7 +2,7 @@ using PCInform.Models;
 
 namespace PCInform.Configuration;
 
-internal static class VisibilityHelper
+public static class VisibilityHelper
 {
     public static bool IsEmailVisible(SupportSettings support) =>
         support.ShowEmail && !string.IsNullOrWhiteSpace(support.EmailTo);
@@ -36,10 +36,24 @@ internal static class VisibilityHelper
     public static bool HasAnyUserField(FeatureSettings features) =>
         features.ShowUserLogin || features.ShowDisplayName;
 
-    public static bool HasAnyReportContent(FeatureSettings features, SupportSettings support) =>
-        IsContactSectionVisible(support) ||
-        HasAnyComputerField(features) ||
-        HasAnyUserField(features) ||
-        features.ShowTeamViewerSection ||
-        features.IncludeAteraInReports;
+    public static bool HasAnyComputerReportField(ReportSettings report) =>
+        report.IncludeComputerName ||
+        report.IncludeDomain ||
+        report.IncludeOperatingSystem ||
+        report.IncludeIpAddress ||
+        report.IncludeDnsServers ||
+        report.IncludeUptime ||
+        report.IncludeManufacturerModel ||
+        report.IncludeSerialNumber ||
+        report.IncludeDeviceType ||
+        report.IncludeNetworkStatus;
+
+    public static bool HasAnyUserReportField(ReportSettings report) =>
+        report.IncludeUserLogin || report.IncludeDisplayName;
+
+    public static bool HasAnyReportContent(ReportSettings report, SupportSettings support) =>
+        HasAnyComputerReportField(report) ||
+        HasAnyUserReportField(report) ||
+        report.IncludeTeamViewer ||
+        report.IncludeAtera;
 }

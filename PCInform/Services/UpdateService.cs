@@ -7,22 +7,34 @@ using PCInform.Models;
 
 namespace PCInform.Services;
 
+internal sealed class UpdateCheckResult
+{
+    public required string RemoteVersion { get; init; }
+    public string? DownloadUrl { get; init; }
+}
+
 internal static class UpdateService
 {
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(10) };
 
-    public static async Task CheckForUpdatesAsync(IWin32Window? owner)
+    public static UpdateCheckResult? LastResult { get; private set; }
+
+    public static bool IsUpdateAvailable => LastResult is not null;
+
+    public static async Task CheckForUpdatesAsync()
     {
+        LastResult = null;
+
         var config = ConfigurationService.Current;
-        if (!config.Features.CheckUpdates || !config.Update.Enabled)
+        AppDiagnosticLog.Write("Update check started");
+
+        if (!config.Update.Enabled || string.IsNullOrWhiteSpace(config.Update.VersionUrl))
         {
+            AppDiagnosticLog.Write("Update check skipped: disabled or version URL missing");
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(config.Update.VersionUrl))
-        {
-            return;
-        }
+        AppDiagnosticLog.Write($"Version URL: {config.Update.VersionUrl}");
 
         try
         {
@@ -34,67 +46,68 @@ internal static class UpdateService
 
             if (remote is null || string.IsNullOrWhiteSpace(remote.Version))
             {
+                AppDiagnosticLog.Write("Update result: invalid version.json payload");
                 return;
             }
 
-            if (!Version.TryParse(AppInfoService.Version, out var currentVersion) ||
-                !Version.TryParse(remote.Version, out var remoteVersion))
+            var currentRaw = AppInfoService.Version;
+            var remoteRaw = remote.Version.Trim();
+
+            AppDiagnosticLog.Write($"Current version raw: {currentRaw}");
+            AppDiagnosticLog.Write($"Remote version raw: {remoteRaw}");
+
+            if (!VersionHelper.TryParseLoose(currentRaw, out var currentVersion) ||
+                !VersionHelper.TryParseLoose(remoteRaw, out var remoteVersion))
             {
+                AppDiagnosticLog.Write("Update result: version parse failed");
                 return;
             }
 
-            if (remoteVersion <= currentVersion)
+            AppDiagnosticLog.Write($"Current version parsed: {currentVersion}");
+            AppDiagnosticLog.Write($"Remote version parsed: {remoteVersion}");
+
+            var comparison = remoteVersion.CompareTo(currentVersion);
+            AppDiagnosticLog.Write($"Comparison result: {comparison}");
+            AppDiagnosticLog.Write($"Current < Remote = {comparison > 0}");
+
+            if (comparison <= 0)
             {
+                AppDiagnosticLog.Write("Update result: no newer version");
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(remote.DownloadUrl))
+            LastResult = new UpdateCheckResult
             {
-                return;
-            }
-
-            var language = LocalizationManager.CurrentLanguage;
-            var releaseNotes = language == AppLanguage.Polish
-                ? remote.ReleaseNotesPl
-                : remote.ReleaseNotesEn;
-
-            if (string.IsNullOrWhiteSpace(releaseNotes))
-            {
-                releaseNotes = language == AppLanguage.Polish
-                    ? "Brak informacji o wydaniu."
-                    : "No release notes provided.";
-            }
-
-            var message = LocalizationManager.UpdateAvailableMessage(remote.Version, releaseNotes);
-            var result = ShowUpdateDialog(owner, message);
-
-            if (result == DialogResult.Yes)
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = remote.DownloadUrl,
-                    UseShellExecute = true
-                });
-            }
+                RemoteVersion = remote.Version.Trim(),
+                DownloadUrl = string.IsNullOrWhiteSpace(remote.DownloadUrl) ? null : remote.DownloadUrl.Trim()
+            };
+            AppDiagnosticLog.Write($"Update result: newer version available ({LastResult.RemoteVersion})");
         }
-        catch
+        catch (Exception ex)
         {
-            // Do not block startup when update check fails.
+            AppDiagnosticLog.Write($"Update check failed: {ex.Message}");
         }
     }
 
-    private static DialogResult ShowUpdateDialog(IWin32Window? owner, string message)
+    public static void OpenDownloadPage()
     {
-        if (owner is Control control && control.InvokeRequired)
+        var url = LastResult?.DownloadUrl;
+        if (string.IsNullOrWhiteSpace(url))
         {
-            return (DialogResult)control.Invoke(() => ShowUpdateDialog(owner, message))!;
+            url = LocalizationManager.AboutGitHubUrl;
         }
 
-        return MessageBox.Show(
-            owner,
-            message,
-            LocalizationManager.UpdateAvailableTitle,
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Information);
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            // Ignore browser launch failures.
+        }
     }
 }

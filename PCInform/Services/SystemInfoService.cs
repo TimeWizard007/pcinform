@@ -3,7 +3,8 @@ using System.Management;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Security.Principal;
+using System.Runtime.InteropServices;
+using System.Text;
 using PCInform.Localization;
 using PCInform.Models;
 
@@ -324,47 +325,97 @@ internal static class SystemInfoService
 
     private static string GetUserDisplayName()
     {
-        var displayName = GetUserDisplayNameFromWmi();
-        if (!string.IsNullOrWhiteSpace(displayName))
+        var username = Environment.UserName?.Trim() ?? string.Empty;
+        var login = GetUserLogin();
+        if (string.IsNullOrWhiteSpace(username))
         {
-            return displayName;
+            return login;
         }
 
-        return OperatingSystem.IsWindows() ? GetUserDisplayNameFromIdentity() : string.Empty;
-    }
-
-    private static string GetUserDisplayNameFromWmi()
-    {
-        var userName = Environment.UserName.Replace("'", "''");
-        using var searcher = new ManagementObjectSearcher(
-            $"SELECT FullName FROM Win32_UserAccount WHERE Name='{userName}' AND FullName IS NOT NULL");
-
-        foreach (ManagementObject item in searcher.Get())
+        var profileDisplayName = GetUserNameExDisplayName();
+        if (IsReliableDisplayName(profileDisplayName, username))
         {
-            var fullName = item["FullName"]?.ToString()?.Trim();
-            if (!string.IsNullOrWhiteSpace(fullName))
+            return profileDisplayName;
+        }
+
+        var machineName = Environment.MachineName;
+        var userDomain = Environment.UserDomainName;
+        var isLocalSession = string.IsNullOrWhiteSpace(userDomain) ||
+                             userDomain.Equals(machineName, StringComparison.OrdinalIgnoreCase);
+
+        if (!isLocalSession)
+        {
+            var domainFullName = GetWin32UserAccountFullName(username, userDomain, localOnly: false);
+            if (IsReliableDisplayName(domainFullName, username))
             {
-                return fullName;
+                return domainFullName;
             }
         }
 
-        return string.Empty;
+        var localFullName = GetWin32UserAccountFullName(
+            username,
+            isLocalSession ? machineName : userDomain,
+            localOnly: isLocalSession);
+        if (IsReliableDisplayName(localFullName, username))
+        {
+            return localFullName;
+        }
+
+        if (!isLocalSession)
+        {
+            var machineLocalFullName = GetWin32UserAccountFullName(username, machineName, localOnly: true);
+            if (IsReliableDisplayName(machineLocalFullName, username))
+            {
+                return machineLocalFullName;
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(login) ? username : login;
     }
 
-    private static string GetUserDisplayNameFromIdentity()
+    private static bool IsReliableDisplayName(string? value, string username)
     {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.Contains('\\', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (trimmed.Equals(username, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (trimmed.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals(Environment.MachineName, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (trimmed.Length < 2)
+        {
+            return false;
+        }
+
+        return trimmed.Any(char.IsLetter);
+    }
+
+    private static string GetWin32UserAccountFullName(string username, string domain, bool localOnly)
+    {
+        var escapedUser = username.Replace("'", "''");
+        var escapedDomain = domain.Replace("'", "''");
+        var query = localOnly
+            ? $"SELECT FullName FROM Win32_UserAccount WHERE Name='{escapedUser}' AND (LocalAccount=True OR Domain='{escapedDomain}')"
+            : $"SELECT FullName FROM Win32_UserAccount WHERE Name='{escapedUser}' AND Domain='{escapedDomain}'";
+
         try
         {
-            using var identity = WindowsIdentity.GetCurrent();
-            var parts = identity.Name?.Split('\\');
-            if (parts?.Length != 2)
-            {
-                return string.Empty;
-            }
-
-            using var searcher = new ManagementObjectSearcher(
-                $"SELECT FullName FROM Win32_UserAccount WHERE Name='{parts[1].Replace("'", "''")}'");
-
+            using var searcher = new ManagementObjectSearcher(query);
             foreach (ManagementObject item in searcher.Get())
             {
                 var fullName = item["FullName"]?.ToString()?.Trim();
@@ -376,25 +427,66 @@ internal static class SystemInfoService
         }
         catch
         {
-            // Ignore identity lookup failures.
+            // Ignore WMI lookup failures.
         }
 
         return string.Empty;
     }
 
+    private const int NameDisplay = 3;
+
+    [DllImport("secur32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool GetUserNameEx(int nameFormat, StringBuilder userName, ref int userNameSize);
+
+    private static string GetUserNameExDisplayName()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            var size = 256;
+            var builder = new StringBuilder(size);
+            if (GetUserNameEx(NameDisplay, builder, ref size))
+            {
+                return builder.ToString().Trim();
+            }
+
+            if (size > builder.Capacity)
+            {
+                builder = new StringBuilder(size);
+                if (GetUserNameEx(NameDisplay, builder, ref size))
+                {
+                    return builder.ToString().Trim();
+                }
+            }
+        }
+        catch
+        {
+            // Ignore profile display name lookup failures.
+        }
+
+        return string.Empty;
+    }
+
+    private static readonly HashSet<int> DesktopChassisTypes =
+    [
+        3, 4, 5, 6, 7, 15, 16, 35, 36
+    ];
+
     private static bool IsVirtualMachine()
     {
         var combined = string.Empty;
-        var hypervisorPresent = false;
 
         try
         {
             using var systemSearcher = new ManagementObjectSearcher(
-                "SELECT Manufacturer, Model, HypervisorPresent FROM Win32_ComputerSystem");
+                "SELECT Manufacturer, Model FROM Win32_ComputerSystem");
             foreach (ManagementObject item in systemSearcher.Get())
             {
                 combined += $"{item["Manufacturer"]} {item["Model"]} ";
-                hypervisorPresent = item["HypervisorPresent"] is true;
             }
         }
         catch
@@ -416,18 +508,65 @@ internal static class SystemInfoService
         }
 
         combined = combined.ToLowerInvariant();
-        if (hypervisorPresent)
-        {
-            return true;
-        }
 
         string[] vmKeywords =
         [
             "vmware", "virtualbox", "vbox", "innotek", "virtual machine",
-            "qemu", "kvm", "proxmox", "xen", "parallels", "bochs", "hyper-v"
+            "qemu", "kvm", "proxmox", "xen", "parallels", "bochs",
+            "amazon ec2", "google compute", "microsoft corporation virtual"
         ];
 
-        return vmKeywords.Any(keyword => combined.Contains(keyword, StringComparison.Ordinal));
+        if (vmKeywords.Any(keyword => combined.Contains(keyword, StringComparison.Ordinal)))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsLaptopChassis()
+    {
+        try
+        {
+            using var enclosureSearcher = new ManagementObjectSearcher("SELECT ChassisTypes FROM Win32_SystemEnclosure");
+            foreach (ManagementObject item in enclosureSearcher.Get())
+            {
+                if (item["ChassisTypes"] is ushort[] chassisTypes &&
+                    chassisTypes.Any(t => LaptopChassisTypes.Contains(t)))
+                {
+                    return true;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore WMI failures.
+        }
+
+        return false;
+    }
+
+    private static bool IsDesktopChassis()
+    {
+        try
+        {
+            using var enclosureSearcher = new ManagementObjectSearcher("SELECT ChassisTypes FROM Win32_SystemEnclosure");
+            foreach (ManagementObject item in enclosureSearcher.Get())
+            {
+                if (item["ChassisTypes"] is ushort[] chassisTypes &&
+                    chassisTypes.Length > 0 &&
+                    chassisTypes.All(t => DesktopChassisTypes.Contains(t)))
+                {
+                    return true;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore WMI failures.
+        }
+
+        return false;
     }
 
     private static string GetMachineType(AppLanguage language)
@@ -437,21 +576,9 @@ internal static class SystemInfoService
             return language == AppLanguage.Polish ? "Komputer wirtualny" : "Virtual Machine";
         }
 
-        try
+        if (IsLaptopChassis())
         {
-            using var enclosureSearcher = new ManagementObjectSearcher("SELECT ChassisTypes FROM Win32_SystemEnclosure");
-            foreach (ManagementObject item in enclosureSearcher.Get())
-            {
-                if (item["ChassisTypes"] is ushort[] chassisTypes &&
-                    chassisTypes.Any(t => LaptopChassisTypes.Contains(t)))
-                {
-                    return "Laptop";
-                }
-            }
-        }
-        catch
-        {
-            // Ignore WMI failures.
+            return "Laptop";
         }
 
         try
@@ -461,14 +588,26 @@ internal static class SystemInfoService
             {
                 if (item["PCSystemType"] is ushort systemType)
                 {
-                    if (systemType == 1) return "Laptop";
-                    if (systemType == 2) return language == AppLanguage.Polish ? "Komputer stacjonarny" : "Desktop";
+                    if (systemType == 1)
+                    {
+                        return "Laptop";
+                    }
+
+                    if (systemType is 2 or 3 or 4 or 5 or 6 or 7)
+                    {
+                        return language == AppLanguage.Polish ? "Komputer stacjonarny" : "Desktop";
+                    }
                 }
             }
         }
         catch
         {
             // Ignore WMI failures.
+        }
+
+        if (IsDesktopChassis())
+        {
+            return language == AppLanguage.Polish ? "Komputer stacjonarny" : "Desktop";
         }
 
         return language == AppLanguage.Polish ? "Komputer stacjonarny" : "Desktop";

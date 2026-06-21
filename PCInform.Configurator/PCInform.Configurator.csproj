@@ -7,13 +7,12 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
-    <AssemblyName>PCInform</AssemblyName>
-    <RootNamespace>PCInform</RootNamespace>
-    <Product>PC Inform</Product>
+    <AssemblyName>PCInform.Configurator</AssemblyName>
+    <RootNamespace>PCInform.Configurator</RootNamespace>
+    <Product>PC Inform Configurator</Product>
     <Company>pcinform</Company>
-    <Description>Lightweight Windows desktop tool for collecting PC and user information.</Description>
+    <Description>Administrator tool for editing PC Inform appsettings.json.</Description>
+    <ApplicationIcon>..\PCInform\icon.ico</ApplicationIcon>
     <Version>1.2.1</Version>
   </PropertyGroup>
 
@@ -29,12 +28,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PCInform.Shared\PCInform.Shared.csproj" />
-    <PackageReference Include="System.Management" Version="8.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="icon.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="..\appsettings.example.json" Link="appsettings.example.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

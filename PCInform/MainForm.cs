@@ -56,6 +56,10 @@ internal sealed class MainForm : Form
     private LinkLabel? _englishLink;
     private Label? _languageSeparator;
     private Label _footerLabel = null!;
+    private Label? _networkStatusLabel;
+    private LinkLabel? _updateIndicatorLink;
+    private FlowLayoutPanel? _footerLeftPanel;
+    private ToolTip _footerToolTip = null!;
     private LinkLabel _configLink = null!;
     private LinkLabel _aboutLink = null!;
 
@@ -65,9 +69,11 @@ internal sealed class MainForm : Form
     private Button _closeButton = null!;
 
     private const int TableRowHeight = 36;
+    private const int TableRowVerticalPadding = 10;
     private const int TablePanelExtraHeight = 20;
     private const int ContactRowHeight = 32;
     private const int ContactPanelExtraHeight = 26;
+    private const int ContactValueLeft = 124;
 
     private TextBox[] _dataValueBoxes = [];
 
@@ -87,7 +93,43 @@ internal sealed class MainForm : Form
     private async void OnFormShown(object? sender, EventArgs e)
     {
         await RefreshDataAsync();
-        _ = UpdateService.CheckForUpdatesAsync(this);
+        _ = RefreshFooterIndicatorsAsync();
+    }
+
+    private async Task RefreshFooterIndicatorsAsync()
+    {
+        try
+        {
+            await NetworkStatusService.CheckAsync().ConfigureAwait(true);
+            await UpdateService.CheckForUpdatesAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnosticLog.Write($"Footer indicator checks failed: {ex.Message}");
+        }
+
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvoke(RefreshFooterIndicators);
+            return;
+        }
+
+        RefreshFooterIndicators();
+    }
+
+    private void RefreshFooterIndicators()
+    {
+        UpdateNetworkStatusIndicator();
+        UpdateFooterIndicator();
+        _footerLeftPanel?.PerformLayout();
+        _footerLeftPanel?.Invalidate();
+        AppDiagnosticLog.Write($"Footer network indicator visible: {_networkStatusLabel?.Visible == true}, text: '{_networkStatusLabel?.Text}'");
+        AppDiagnosticLog.Write($"Footer update indicator visible: {_updateIndicatorLink?.Visible == true}, text: '{_updateIndicatorLink?.Text}'");
     }
 
     private void InitializeForm()
@@ -180,15 +222,67 @@ internal sealed class MainForm : Form
 
         bannerPanel.Controls.Add(accentStrip);
 
+        var showNetworkStatus = features.ShowNetworkStatus;
+        var footerIndicatorFont = CreateFooterIndicatorFont();
+
         _footerLabel = new Label
         {
-            Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleCenter,
+            AutoSize = true,
+            TextAlign = ContentAlignment.MiddleLeft,
             BackColor = AppTheme.FooterBackground,
             ForeColor = AppTheme.FooterText,
             Font = _footerFont,
-            Text = AppInfoService.FooterText
+            Text = AppInfoService.FooterText,
+            Margin = new Padding(0, 4, 6, 4)
         };
+
+        _networkStatusLabel = new Label
+        {
+            AutoSize = false,
+            Size = new Size(22, 18),
+            Visible = showNetworkStatus,
+            Font = footerIndicatorFont,
+            ForeColor = AppTheme.FooterText,
+            Margin = new Padding(4, 3, 4, 3),
+            TextAlign = ContentAlignment.MiddleCenter,
+            Text = LocalizationManager.NetworkStatusOnlineIndicator
+        };
+
+        _updateIndicatorLink = new LinkLabel
+        {
+            AutoSize = false,
+            Size = new Size(22, 18),
+            Text = LocalizationManager.UpdateFooterIndicator,
+            Visible = false,
+            LinkColor = AppTheme.Accent,
+            ActiveLinkColor = AppTheme.BannerBlue,
+            VisitedLinkColor = AppTheme.Accent,
+            Font = footerIndicatorFont,
+            Cursor = Cursors.Hand,
+            LinkBehavior = LinkBehavior.HoverUnderline,
+            Margin = new Padding(4, 3, 4, 3),
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+        _updateIndicatorLink.Click += (_, _) => UpdateService.OpenDownloadPage();
+
+        _footerToolTip = new ToolTip();
+
+        _footerLeftPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            AutoSize = false,
+            BackColor = AppTheme.FooterBackground,
+            Padding = new Padding(12, 0, 0, 0)
+        };
+        _footerLeftPanel.Controls.Add(_footerLabel);
+        _footerLeftPanel.Controls.Add(_networkStatusLabel);
+        _footerLeftPanel.Controls.Add(_updateIndicatorLink);
+
+        AppDiagnosticLog.Write("Footer controls created");
+        AppDiagnosticLog.Write($"Footer network control added, initial visible: {_networkStatusLabel.Visible}");
+        AppDiagnosticLog.Write($"Footer update control added, initial visible: {_updateIndicatorLink.Visible}");
 
         _aboutLink = new LinkLabel
         {
@@ -241,15 +335,16 @@ internal sealed class MainForm : Form
         var footerPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Bottom,
-            Height = 22,
+            Height = 28,
             BackColor = AppTheme.FooterBackground,
             ColumnCount = 2,
             RowCount = 1
         };
         footerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         footerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        footerPanel.Controls.Add(_footerLabel, 0, 0);
+        footerPanel.Controls.Add(_footerLeftPanel, 0, 0);
         footerPanel.Controls.Add(footerLinksPanel, 1, 0);
+        AppDiagnosticLog.Write("Footer panel assembled");
 
         var buttonPanel = new Panel
         {
@@ -343,7 +438,7 @@ internal sealed class MainForm : Form
             {
                 Text = support.EmailTo,
                 AutoSize = true,
-                Location = new Point(88, rowY),
+                    Location = new Point(ContactValueLeft, rowY),
                 Font = _valueFont,
                 LinkColor = AppTheme.BannerBlue,
                 ActiveLinkColor = AppTheme.Accent,
@@ -364,7 +459,7 @@ internal sealed class MainForm : Form
             {
                 Text = support.Phone,
                 AutoSize = true,
-                Location = new Point(88, rowY),
+                    Location = new Point(ContactValueLeft, rowY),
                 Font = _valueFont,
                 ForeColor = AppTheme.ValueText
             };
@@ -381,7 +476,7 @@ internal sealed class MainForm : Form
             {
                 Text = support.MobilePhone,
                 AutoSize = true,
-                Location = new Point(88, rowY),
+                    Location = new Point(ContactValueLeft, rowY),
                 Font = _valueFont,
                 ForeColor = AppTheme.ValueText
             };
@@ -398,7 +493,7 @@ internal sealed class MainForm : Form
             {
                 Text = FormatWebsiteDisplay(support.WebsiteUrl),
                 AutoSize = true,
-                Location = new Point(88, rowY),
+                    Location = new Point(ContactValueLeft, rowY),
                 Font = _valueFont,
                 LinkColor = AppTheme.BannerBlue,
                 ActiveLinkColor = AppTheme.Accent,
@@ -567,20 +662,33 @@ internal sealed class MainForm : Form
     {
         if (string.IsNullOrWhiteSpace(url))
         {
-            return url;
+            return string.Empty;
         }
 
-        var display = url.Trim();
-        if (display.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        var trimmed = url.Trim();
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
         {
-            display = display[8..];
-        }
-        else if (display.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-        {
-            display = display[7..];
+            var display = uri.Host;
+            var path = uri.PathAndQuery;
+            if (!string.IsNullOrEmpty(path) && path != "/")
+            {
+                display += path.TrimEnd('/');
+            }
+
+            return display;
         }
 
-        return display.TrimEnd('/');
+        if (trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed[8..].TrimEnd('/');
+        }
+
+        if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed[7..].TrimEnd('/');
+        }
+
+        return trimmed.TrimEnd('/');
     }
 
     private static void OpenWebsite(string url)
@@ -680,7 +788,7 @@ internal sealed class MainForm : Form
                 AutoSize = false,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Margin = new Padding(0, 4, 8, 4),
+                Margin = new Padding(12, TableRowVerticalPadding, 8, TableRowVerticalPadding),
                 Font = _labelFont,
                 ForeColor = AppTheme.LabelText
             };
@@ -691,11 +799,10 @@ internal sealed class MainForm : Form
                 BackColor = AppTheme.PanelBackground,
                 ForeColor = AppTheme.ValueText,
                 Font = _valueFont,
-                Margin = new Padding(0, 4, 0, 4),
+                Margin = new Padding(0, TableRowVerticalPadding, 12, TableRowVerticalPadding),
                 Dock = DockStyle.Fill,
                 TabStop = false,
-                Multiline = true,
-                WordWrap = false
+                Multiline = false
             };
             table.Controls.Add(captions[i], 0, i);
             table.Controls.Add(values[i], 1, i);
@@ -889,6 +996,71 @@ internal sealed class MainForm : Form
         }
     }
 
+    private void UpdateNetworkStatusIndicator()
+    {
+        if (_networkStatusLabel is null)
+        {
+            AppDiagnosticLog.Write("Footer network indicator skipped: control is null");
+            return;
+        }
+
+        var showIndicator = ConfigurationService.Current.Features.ShowNetworkStatus;
+        AppDiagnosticLog.Write($"Footer network indicator ShowNetworkStatus = {showIndicator}");
+
+        _networkStatusLabel.Visible = showIndicator;
+        if (!showIndicator)
+        {
+            return;
+        }
+
+        var isOnline = NetworkStatusService.LastResult.IsInternetAvailable;
+        _networkStatusLabel.Text = isOnline
+            ? LocalizationManager.NetworkStatusOnlineIndicator
+            : LocalizationManager.NetworkStatusOfflineIndicator;
+        _networkStatusLabel.ForeColor = isOnline ? AppTheme.FooterText : AppTheme.Accent;
+        var networkResult = NetworkStatusService.LastResult;
+        _footerToolTip.SetToolTip(
+            _networkStatusLabel,
+            LocalizationManager.NetworkStatusTooltip(networkResult.Internet, networkResult.Dns));
+    }
+
+    private void UpdateFooterIndicator()
+    {
+        if (_updateIndicatorLink is null)
+        {
+            AppDiagnosticLog.Write("Footer update indicator skipped: control is null");
+            return;
+        }
+
+        var result = UpdateService.LastResult;
+        var showFooterIndicator = ConfigurationService.Current.Update.ShowFooterIndicator;
+        var showIndicator = result is not null && showFooterIndicator;
+        AppDiagnosticLog.Write($"Footer update indicator ShowFooterIndicator = {showFooterIndicator}, update available = {result is not null}");
+
+        _updateIndicatorLink.Visible = showIndicator;
+        if (!showIndicator)
+        {
+            return;
+        }
+
+        _updateIndicatorLink.Text = LocalizationManager.UpdateFooterIndicator;
+        _footerToolTip.SetToolTip(
+            _updateIndicatorLink,
+            LocalizationManager.UpdateFooterTooltip(AppInfoService.Version, result!.RemoteVersion));
+    }
+
+    private static Font CreateFooterIndicatorFont()
+    {
+        try
+        {
+            return new Font("Segoe UI Emoji", 9F);
+        }
+        catch
+        {
+            return new Font("Segoe UI", 9F, FontStyle.Bold);
+        }
+    }
+
     private void LaunchTeamViewer()
     {
         if (string.IsNullOrEmpty(_data.TeamViewerPath))
@@ -915,6 +1087,7 @@ internal sealed class MainForm : Form
         Text = LocalizationManager.WindowTitle;
         _bannerLabel.Text = LocalizationManager.BannerTitle;
         _footerLabel.Text = AppInfoService.FooterText;
+        RefreshFooterIndicators();
         _configLink.Text = LocalizationManager.ConfigurationLink;
         _aboutLink.Text = LocalizationManager.AboutLink;
 

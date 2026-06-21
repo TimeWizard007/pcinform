@@ -12,15 +12,11 @@ This document is for contributors and maintainers. End-user and organization doc
 
 ```
 pcinform/
-├── PCInform/                    # WinForms application (.NET 8)
-│   ├── Configuration/           # AppPaths, ConfigurationService, VisibilityHelper
-│   ├── Localization/            # PL/EN strings and language resolution
-│   ├── Models/                  # AppSettings and data models
-│   ├── Services/                # System info, mail, reports, updates, settings
-│   ├── UI/                      # Theme and custom controls
-│   ├── MainForm.cs
-│   ├── AboutForm.cs
-│   └── Program.cs
+├── PCInform/                    # End-user WinForms application (.NET 8)
+├── PCInform.Configurator/       # Administrator config editor (PCInform.Configurator.exe)
+├── PCInform.Shared/             # Shared configuration models and persistence
+│   ├── Models/                  # AppSettings JSON model
+│   └── Configuration/           # AppPaths, ConfigurationService, validation
 ├── appsettings.example.json     # Reference configuration (safe public defaults)
 ├── docs/
 │   ├── DEVELOPER.md             # This file
@@ -44,16 +40,33 @@ PC Inform uses **two configuration layers**:
 - **Loaded by:** `ConfigurationService` at startup
 - **Created by:** installer (if missing) or application first run (if missing and writable)
 - **Never overwritten** on upgrade or by the app when the file already exists
-- **Scope:** branding, support contacts, feature visibility, optional update source
+- **Scope:** branding, support contacts, UI visibility (`features`), report content (`report`), optional update source
 
 The application does **not** read config from `%LOCALAPPDATA%` or from beside the executable.
 
 Implementation entry points:
 
-- `PCInform/Configuration/AppPaths.cs` — path constants
-- `PCInform/Configuration/ConfigurationService.cs` — load, merge defaults, legacy `support.email` migration
-- `PCInform/Configuration/VisibilityHelper.cs` — contact/section visibility rules
-- `PCInform/Models/AppModels.cs` — JSON model
+- `PCInform.Shared/Configuration/AppPaths.cs` — path constants
+- `PCInform.Shared/Configuration/ConfigurationService.cs` — load, save, merge defaults, legacy `support.email` migration, `report` section upgrade
+- `PCInform.Shared/Configuration/ConfigurationValidator.cs` — validation for the configurator
+- `PCInform.Shared/Configuration/VisibilityHelper.cs` — contact/section visibility rules
+- `PCInform.Shared/Models/AppSettings.cs` — JSON model
+- `PCInform.Configurator/` — administrator WinForms editor for `appsettings.json` (Application, Support, Features, Report, Update tabs)
+
+### Config schema upgrade
+
+On startup and when loading config in the configurator, `ConfigurationService`:
+
+- Merges missing top-level sections with safe defaults (`application`, `support`, `features`, `report`, `update`)
+- Adds missing v1.2 fields when absent from older JSON (`features.showNetworkStatus`, `report.includeNetworkStatus`, `update.showFooterIndicator`)
+- Adds a missing `report` section by deriving values from existing `features` flags (preserves prior report behaviour for older configs)
+- Saves upgraded global config back to `C:\ProgramData\PCInform\appsettings.json` only when new fields were added
+- Preserves all existing field values and does not remove unknown JSON properties on deserialize
+- Does not overwrite an existing `appsettings.json` on disk unless the app or configurator explicitly saves
+
+UI visibility is controlled by `features.show*`. Clipboard and **Report problem** content uses `report.include*` independently.
+
+Diagnostic logs (when writable): `C:\ProgramData\PCInform\Logs\PCInform.log`
 
 ### 2. Per-user `settings.json` (language only)
 
@@ -77,9 +90,12 @@ Implementation entry points:
 
 ```powershell
 dotnet run --project PCInform\PCInform.csproj
+dotnet run --project PCInform.Configurator\PCInform.Configurator.csproj
 ```
 
 ### Release publish (single-file, self-contained)
+
+Publish the end-user application:
 
 ```powershell
 dotnet publish PCInform\PCInform.csproj `
@@ -98,10 +114,33 @@ Output:
 PCInform\bin\Release\net8.0-windows\win-x64\publish\PCInform.exe
 ```
 
+Publish the optional administrator configurator separately (not bundled in `PCInform-Setup.exe`):
+
+```powershell
+dotnet publish PCInform.Configurator\PCInform.Configurator.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  /p:PublishSingleFile=true `
+  /p:PublishTrimmed=false `
+  /p:IncludeNativeLibrariesForSelfExtract=true `
+  /p:EnableCompressionInSingleFile=true
+```
+
+Output:
+
+```
+PCInform.Configurator\bin\Release\net8.0-windows\win-x64\publish\PCInform.Configurator.exe
+```
+
 Cross-publish from Linux:
 
 ```bash
 dotnet publish PCInform/PCInform.csproj -c Release -r win-x64 --self-contained true \
+  /p:PublishSingleFile=true /p:PublishTrimmed=false \
+  /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true
+
+dotnet publish PCInform.Configurator/PCInform.Configurator.csproj -c Release -r win-x64 --self-contained true \
   /p:PublishSingleFile=true /p:PublishTrimmed=false \
   /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true
 ```
@@ -114,7 +153,7 @@ After publish, compile the Inno Setup script on Windows:
 iscc installer\PCInform.iss
 ```
 
-The script installs the app to `%LOCALAPPDATA%\PCInform\` and creates `%PROGRAMDATA%\PCInform\appsettings.json` with `onlyifdoesntexist`.
+The end-user installer script installs `PCInform.exe` only (not the configurator) for all users to `C:\Program Files\PCInform\`, and creates `C:\ProgramData\PCInform\appsettings.json` with `onlyifdoesntexist` (from `appsettings.json` next to the installer when present, otherwise from `appsettings.example.json`).
 
 Replace `PCInform/icon.ico` before release if the icon changes.
 
@@ -144,7 +183,8 @@ Full steps: [RELEASE_PROCESS.md](RELEASE_PROCESS.md)
 
 | Asset | Purpose |
 |-------|---------|
-| `PCInform-Setup.exe` | Primary end-user installer |
+| `PCInform-Setup.exe` | Primary end-user installer (`PCInform.exe` only) |
+| `PCInform.Configurator.exe` | Optional administrator config editor (separate GitHub Release asset) |
 | `PCInform.exe` (optional) | Portable binary or ZIP |
 | `version.json` (optional) | Remote metadata for `update.versionUrl` |
 
@@ -152,10 +192,10 @@ Example `version.json`: [version.example.json](version.example.json)
 
 Relationship to `appsettings.json`:
 
-- **`appsettings.json`** on each PC decides *whether* to check for updates (`features.checkUpdates`, `update.enabled`) and *where* (`update.versionUrl`)
+- **`appsettings.json`** on each PC decides *whether* to check for updates (`update.enabled`, `update.versionUrl`, `update.showFooterIndicator`) and branding/features/report visibility
 - **`version.json`** on a server or GitHub Release describes *what* the latest published version is and where to download it
 
-PC Inform compares remote `version.json` to the running assembly version and opens `downloadUrl` in the browser on user confirmation. It does **not** auto-install or run an updater.
+PC Inform compares remote `version.json` to the running assembly version using semantic version rules. When a newer version is available, it shows a discreet footer indicator (and About notice). Clicking the indicator opens `downloadUrl` in the browser. It does **not** auto-install, show a startup popup, or run an updater.
 
 ## Key components (quick reference)
 
@@ -165,7 +205,9 @@ PC Inform compares remote `version.json` to the running assembly version and ope
 | Main UI | `MainForm.cs` |
 | Reports / clipboard | `Services/ReportFormatter.cs` |
 | Email drafts | `Services/MailHelper.cs`, `OutlookMailService.cs` |
-| Update check | `Services/UpdateService.cs` (no-op when disabled) |
+| Update check | `Services/UpdateService.cs`, `Services/VersionHelper.cs` (informational footer indicator) |
+| Network status | `Services/NetworkStatusService.cs` (footer indicator) |
+| Diagnostics | `PCInform.Shared/Configuration/AppDiagnosticLog.cs` |
 | System info | `Services/SystemInfoService.cs` |
 
 ## License

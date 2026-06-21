@@ -1,21 +1,16 @@
 namespace PCInform.Configuration;
 
-internal static class AppPaths
+public static class AppPaths
 {
-    /// <summary>
-    /// Machine-wide configuration directory (%PROGRAMDATA%\PCInform).
-    /// </summary>
     public static string GlobalConfigDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "PCInform");
 
-    /// <summary>
-    /// Machine-wide appsettings.json (%PROGRAMDATA%\PCInform\appsettings.json).
-    /// </summary>
     public static string ConfigFilePath => Path.Combine(GlobalConfigDirectory, "appsettings.json");
 
-    /// <summary>
-    /// Per-user preferences only (language).
-    /// </summary>
+    public static string LogDirectory => Path.Combine(GlobalConfigDirectory, "Logs");
+
+    public static string LogFilePath => Path.Combine(LogDirectory, "PCInform.log");
+
     public static string UserSettingsDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PCInform");
 

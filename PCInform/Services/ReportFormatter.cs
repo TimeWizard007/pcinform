@@ -19,7 +19,6 @@ internal static class ReportFormatter
     private static string FormatPolishClipboard(SystemInfoData data)
     {
         var sections = new List<string>();
-        AppendContactSection(sections, AppLanguage.Polish);
         AppendComputerSection(sections, data, AppLanguage.Polish);
         AppendUserSection(sections, data, AppLanguage.Polish);
         AppendAgentSection(sections, data, AppLanguage.Polish);
@@ -29,7 +28,6 @@ internal static class ReportFormatter
     private static string FormatEnglishClipboard(SystemInfoData data)
     {
         var sections = new List<string>();
-        AppendContactSection(sections, AppLanguage.English);
         AppendComputerSection(sections, data, AppLanguage.English);
         AppendUserSection(sections, data, AppLanguage.English);
         AppendAgentSection(sections, data, AppLanguage.English);
@@ -53,7 +51,6 @@ internal static class ReportFormatter
             """
         };
 
-        AppendContactSection(sections, AppLanguage.Polish, inline: true);
         AppendComputerSection(sections, data, AppLanguage.Polish, inline: true);
         AppendUserSection(sections, data, AppLanguage.Polish, inline: true);
         AppendAgentSection(sections, data, AppLanguage.Polish, inline: true);
@@ -77,60 +74,10 @@ internal static class ReportFormatter
             """
         };
 
-        AppendContactSection(sections, AppLanguage.English, inline: true);
         AppendComputerSection(sections, data, AppLanguage.English, inline: true);
         AppendUserSection(sections, data, AppLanguage.English, inline: true);
         AppendAgentSection(sections, data, AppLanguage.English, inline: true);
         return string.Join('\n', sections).TrimEnd() + '\n';
-    }
-
-    private static void AppendContactSection(List<string> sections, AppLanguage language, bool inline = false)
-    {
-        var support = ConfigurationService.Current.Support;
-        var lines = BuildContactLines(support, language);
-        if (lines.Count == 0)
-        {
-            return;
-        }
-
-        if (inline)
-        {
-            sections.Add(language == AppLanguage.Polish ? "## KONTAKT" : "## CONTACT");
-            sections.Add(string.Join('\n', lines));
-            return;
-        }
-
-        sections.Add(language == AppLanguage.Polish
-            ? "---------------------------------\nKONTAKT\n---------------------------------"
-            : "---------------------------------\nCONTACT\n---------------------------------");
-        sections.Add(string.Join('\n', lines));
-    }
-
-    private static List<string> BuildContactLines(SupportSettings support, AppLanguage language)
-    {
-        var lines = new List<string>();
-
-        if (VisibilityHelper.IsEmailVisible(support))
-        {
-            lines.Add($"{LocalizationManager.EmailLabel} {support.EmailTo}");
-        }
-
-        if (VisibilityHelper.IsPhoneVisible(support))
-        {
-            lines.Add($"{LocalizationManager.HotlineLabel} {support.Phone}");
-        }
-
-        if (VisibilityHelper.IsMobilePhoneVisible(support))
-        {
-            lines.Add($"{LocalizationManager.MobilePhoneLabel} {support.MobilePhone}");
-        }
-
-        if (VisibilityHelper.IsWebsiteVisible(support))
-        {
-            lines.Add($"{LocalizationManager.WebsiteLabel} {support.WebsiteUrl}");
-        }
-
-        return lines;
     }
 
     private static void AppendComputerSection(
@@ -139,8 +86,8 @@ internal static class ReportFormatter
         AppLanguage language,
         bool inline = false)
     {
-        var features = ConfigurationService.Current.Features;
-        var lines = BuildComputerLines(data, features, language);
+        var report = ConfigurationService.Current.Report;
+        var lines = BuildComputerLines(data, report, language);
         if (lines.Count == 0)
         {
             return;
@@ -159,57 +106,67 @@ internal static class ReportFormatter
         sections.Add(string.Join('\n', lines));
     }
 
-    private static List<string> BuildComputerLines(SystemInfoData data, FeatureSettings features, AppLanguage language)
+    private static List<string> BuildComputerLines(SystemInfoData data, ReportSettings report, AppLanguage language)
     {
         var lines = new List<string>();
 
-        if (features.ShowComputerName)
+        if (report.IncludeComputerName)
         {
             lines.Add($"{LocalizationManager.ComputerNameLabel} {data.ComputerName}");
         }
 
-        if (features.ShowDomain)
+        if (report.IncludeDomain)
         {
             lines.Add($"{LocalizationManager.DomainLabel} {data.Domain}");
         }
 
-        if (features.ShowOperatingSystem)
+        if (report.IncludeOperatingSystem)
         {
             lines.Add($"{LocalizationManager.OperatingSystemLabel} {data.OperatingSystem}");
         }
 
-        if (features.ShowIpAddress)
+        if (report.IncludeIpAddress)
         {
             lines.Add($"{LocalizationManager.IpAddressLabel} {data.IpAddress}");
         }
 
-        if (features.ShowDnsServers)
+        if (report.IncludeDnsServers)
         {
             lines.Add($"{LocalizationManager.DnsLabel} {data.DnsServers}");
         }
 
-        if (features.ShowUptime)
+        if (report.IncludeUptime)
         {
             lines.Add($"{LocalizationManager.UptimeLabel} {data.Uptime}");
         }
 
-        if (features.ShowManufacturerModel)
+        if (report.IncludeManufacturerModel)
         {
             lines.Add($"{LocalizationManager.ManufacturerLabel} {data.ManufacturerModel}");
         }
 
-        if (features.ShowSerialNumber)
+        if (report.IncludeSerialNumber)
         {
             lines.Add($"{LocalizationManager.BiosSerialLabel} {data.BiosSerial}");
         }
 
-        if (features.ShowDeviceType)
+        if (report.IncludeDeviceType)
         {
             lines.Add($"{LocalizationManager.MachineTypeLabel} {data.MachineType}");
         }
 
+        if (report.IncludeNetworkStatus)
+        {
+            lines.Add($"{LocalizationManager.NetworkStatusReportLabel} {GetNetworkStatusText(language)}");
+        }
+
         return lines;
     }
+
+    private static string GetNetworkStatusText(AppLanguage language) =>
+        NetworkStatusService.IsOnline
+            ? LocalizationManager.NetworkStatusOnlineText
+            : LocalizationManager.NetworkStatusOfflineText;
 
     private static void AppendUserSection(
         List<string> sections,
@@ -217,8 +174,8 @@ internal static class ReportFormatter
         AppLanguage language,
         bool inline = false)
     {
-        var features = ConfigurationService.Current.Features;
-        var lines = BuildUserLines(data, features, language);
+        var report = ConfigurationService.Current.Report;
+        var lines = BuildUserLines(data, report, language);
         if (lines.Count == 0)
         {
             return;
@@ -236,18 +193,18 @@ internal static class ReportFormatter
         sections.Add(string.Join('\n', lines));
     }
 
-    private static List<string> BuildUserLines(SystemInfoData data, FeatureSettings features, AppLanguage language)
+    private static List<string> BuildUserLines(SystemInfoData data, ReportSettings report, AppLanguage language)
     {
         var lines = new List<string>();
 
-        if (features.ShowUserLogin)
+        if (report.IncludeUserLogin)
         {
             lines.Add(language == AppLanguage.Polish
                 ? $"Login: {data.UserLogin}"
                 : $"Login: {data.UserLogin}");
         }
 
-        if (features.ShowDisplayName)
+        if (report.IncludeDisplayName)
         {
             lines.Add(language == AppLanguage.Polish
                 ? $"Nazwa użytkownika: {data.UserDisplayName}"
@@ -263,19 +220,19 @@ internal static class ReportFormatter
         AppLanguage language,
         bool inline = false)
     {
-        var features = ConfigurationService.Current.Features;
-        if (!features.ShowTeamViewerSection && !features.IncludeAteraInReports)
+        var report = ConfigurationService.Current.Report;
+        if (!report.IncludeTeamViewer && !report.IncludeAtera)
         {
             return;
         }
 
         var lines = new List<string>();
-        if (features.ShowTeamViewerSection)
+        if (report.IncludeTeamViewer)
         {
             lines.Add($"TeamViewer: {GetTeamViewerStatus(data, language)}");
         }
 
-        if (features.IncludeAteraInReports)
+        if (report.IncludeAtera)
         {
             lines.Add($"Atera: {GetAteraStatus(data, language)}");
         }

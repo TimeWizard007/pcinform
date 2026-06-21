@@ -1,69 +1,19 @@
 namespace PCInform.Models;
 
-internal sealed class AppSettings
+internal enum NetworkCheckState
 {
-    public ApplicationSettings Application { get; set; } = new();
-    public SupportSettings Support { get; set; } = new();
-    public FeatureSettings Features { get; set; } = new();
-    public UpdateSettings Update { get; set; } = new();
+    Ok,
+    Error,
+    NoConnectivity,
+    NotTested
 }
 
-internal sealed class ApplicationSettings
+internal sealed class NetworkStatusResult
 {
-    public string Name { get; set; } = "PC Inform";
-    public string WindowTitle { get; set; } = "PC Inform";
-    public string BannerText { get; set; } = "Service Desk";
-    public string DefaultLanguage { get; set; } = "pl";
-    public string AccentColor { get; set; } = "#E87722";
-    public string WebsiteUrl { get; set; } = string.Empty;
-    public bool EnablePolish { get; set; } = true;
-    public bool EnableEnglish { get; set; } = true;
-}
+    public NetworkCheckState Internet { get; init; } = NetworkCheckState.NotTested;
+    public NetworkCheckState Dns { get; init; } = NetworkCheckState.NotTested;
 
-internal sealed class SupportSettings
-{
-    public string CompanyName { get; set; } = "Your Company";
-    public string EmailTo { get; set; } = "helpdesk@example.com";
-    public string EmailCc { get; set; } = string.Empty;
-    public string EmailBcc { get; set; } = string.Empty;
-    public string EmailSubjectPrefixPl { get; set; } = "Pomoc";
-    public string EmailSubjectPrefixEn { get; set; } = "Support request";
-    public string Phone { get; set; } = string.Empty;
-    public string MobilePhone { get; set; } = string.Empty;
-    public string WebsiteUrl { get; set; } = string.Empty;
-    public bool ShowCompanyName { get; set; } = true;
-    public bool ShowEmail { get; set; } = true;
-    public bool ShowPhone { get; set; } = true;
-    public bool ShowMobilePhone { get; set; }
-    public bool ShowWebsite { get; set; } = true;
-}
-
-internal sealed class FeatureSettings
-{
-    public bool ShowComputerName { get; set; } = true;
-    public bool ShowDomain { get; set; } = true;
-    public bool ShowOperatingSystem { get; set; } = true;
-    public bool ShowIpAddress { get; set; } = true;
-    public bool ShowDnsServers { get; set; } = true;
-    public bool ShowUptime { get; set; } = true;
-    public bool ShowManufacturerModel { get; set; } = true;
-    public bool ShowSerialNumber { get; set; } = true;
-    public bool ShowDeviceType { get; set; } = true;
-    public bool ShowUserLogin { get; set; } = true;
-    public bool ShowDisplayName { get; set; } = true;
-    public bool ShowTeamViewerSection { get; set; }
-    public bool ShowTeamViewer { get; set; }
-    public bool AllowLaunchTeamViewer { get; set; }
-    public bool DetectAtera { get; set; }
-    public bool ShowAteraInGui { get; set; }
-    public bool IncludeAteraInReports { get; set; }
-    public bool CheckUpdates { get; set; }
-}
-
-internal sealed class UpdateSettings
-{
-    public bool Enabled { get; set; }
-    public string VersionUrl { get; set; } = string.Empty;
+    public bool IsInternetAvailable => Internet == NetworkCheckState.Ok;
 }
 
 internal sealed class RemoteVersionInfo

@@ -13,12 +13,14 @@ Polish and English UI are supported. Branding, contact details, visible fields, 
 - **Email integration:** Outlook Classic draft when a MAPI profile exists, with `mailto:` fallback; CC/BCC used when configured
 - **Localization:** Polish and English; language switcher can be limited to one language by configuration
 - **About dialog:** version, description, author, and project link
-- **Optional update notice:** administrators can enable a remote version check (disabled by default; opens a download page in the browser only — no automatic install)
+- **Optional update notice:** administrators can enable an informational remote version check (disabled by default); when a newer version exists, a discreet **⬆️** indicator appears in the footer — no popup, no automatic install
+- **Network status:** optional footer indicator (🌐 / ⚠️) with Internet and DNS tooltips when `features.showNetworkStatus` is enabled
 
 ## Requirements
 
 - Windows 10 or 11 (64-bit)
-- Standard user account (no administrator rights required to run PC Inform)
+- Standard user account to **run** PC Inform (no admin required at runtime)
+- Administrator rights to **install** or upgrade via the setup package
 - A mail client for **Report problem** (for example Outlook or any application registered for `mailto:`)
 
 ## Installation
@@ -26,10 +28,11 @@ Polish and English UI are supported. Branding, contact details, visible fields, 
 ### Installer (recommended)
 
 1. Download **PCInform-Setup.exe** from [GitHub Releases](https://github.com/TimeWizard007/pcinform/releases).
-2. Run the installer. Administrator rights are not required for the application install.
-3. PC Inform is installed per user under `%LOCALAPPDATA%\PCInform\`.
-4. On first install, the installer creates a default configuration at `C:\ProgramData\PCInform\appsettings.json` if that file does not already exist.
-5. Existing configuration is **never overwritten** during upgrade.
+2. Run the installer **as administrator**.
+3. PC Inform is installed for all users under `C:\Program Files\PCInform\`.
+4. On first install, the installer creates `C:\ProgramData\PCInform\appsettings.json` if that file does not already exist (from `appsettings.example.json`, or from `appsettings.json` placed next to the installer).
+5. Existing global configuration is **never overwritten** during upgrade.
+6. Optionally create an all-users desktop shortcut during setup (Start Menu shortcuts are always created).
 
 ### Portable use
 
@@ -55,16 +58,25 @@ Per-user **language preference** only is stored at `%APPDATA%\PCInform\settings.
 
 See [appsettings.example.json](appsettings.example.json) for a full example.
 
+### PC Inform Configurator (optional admin tool)
+
+**PCInform.Configurator.exe** is a separate administrator tool for creating and editing `C:\ProgramData\PCInform\appsettings.json`. It is **not** included in the standard end-user installer and is **not** part of the end-user application.
+
+Download it separately from [GitHub Releases](https://github.com/TimeWizard007/pcinform/releases) when you need a graphical editor for Application, Support, Features, Report, and Update settings. The configurator validates settings before saving (for example at least one language enabled, and `versionUrl` when updates are enabled).
+
+End users normally do not need the configurator — IT administrators prepare the machine-wide configuration before or after deployment, or edit `appsettings.json` directly.
+
 ### JSON sections overview
 
 | Section | Purpose |
 |---------|---------|
 | **Application** | App name, window title, banner text, default language, accent color, enabled languages |
 | **Support** | Company name, support email/phone/mobile/website, CC/BCC, subject prefixes, contact visibility flags |
-| **Features** | Which computer/user fields are shown, optional TeamViewer/Atera integration, update-check permission |
-| **Update** | Whether to check a remote `version.json` and which URL to use (disabled by default) |
+| **Features** | Main window visibility (`features.show*`), optional TeamViewer/Atera integration, network status footer indicator |
+| **Report** | Clipboard and **Report problem** email content (`report.include*`) |
+| **Update** | Informational update check via remote `version.json` and footer indicator (disabled by default) |
 
-Visibility flags in **Support** and **Features** control what appears in the UI and in copied/emailed reports. They do **not** stop the application from collecting system information internally.
+**Display vs report:** `features.show*` flags control **main window visibility only**. The separate `report.include*` flags control **clipboard reports** and **Report problem** email content. You can show a minimal UI while still including full diagnostics in reports, or the reverse. These flags do **not** stop the application from collecting system information internally.
 
 ### Application (`application`)
 
@@ -108,13 +120,23 @@ Website URL is set under `support.websiteUrl`. Display is controlled by `support
 
 Organizations can show a **minimal** UI (banner + contact + Report problem) or a **full diagnostic** view by editing `appsettings.json` — no recompile required.
 
-**Field visibility** (default **true** unless noted):
+**UI field visibility** (default **true** unless noted):
 
 - Computer: `showComputerName`, `showDomain`, `showOperatingSystem`, `showIpAddress`, `showDnsServers`, `showUptime`, `showManufacturerModel`, `showSerialNumber`, `showDeviceType`
 - User: `showUserLogin`, `showDisplayName`
+- Footer: `showNetworkStatus` (network status indicator; default **true**)
 - TeamViewer section: `showTeamViewerSection` (default **false**)
 
-Disabled fields are omitted from the UI, clipboard report, and support email.
+Disabled `show*` fields are omitted from the **main window** only.
+
+### Report (`report`)
+
+Controls which fields appear in **copied clipboard reports** and **Report problem** email drafts (default **true** unless noted):
+
+- Computer/user: `includeComputerName`, `includeDomain`, `includeOperatingSystem`, `includeIpAddress`, `includeDnsServers`, `includeUptime`, `includeManufacturerModel`, `includeSerialNumber`, `includeDeviceType`, `includeUserLogin`, `includeDisplayName`, `includeNetworkStatus`
+- Agents: `includeTeamViewer`, `includeAtera` (default **false**)
+
+When upgrading from older configs without a `report` section, PC Inform derives initial report flags from the previous `features` visibility settings so existing deployments keep similar report content.
 
 **Optional integrations** (default **false** in public configuration):
 
@@ -124,23 +146,26 @@ Disabled fields are omitted from the UI, clipboard report, and support email.
 | `allowLaunchTeamViewer` | Show launch button when TeamViewer is installed |
 | `detectAtera` | Detect Atera agent |
 | `showAteraInGui` | Show Atera in the UI |
-| `includeAteraInReports` | Include Atera in copied/emailed reports |
-| `checkUpdates` | Allow update check on startup |
+| `includeAteraInReports` | Legacy report flag (superseded by `report.includeAtera`; kept for compatibility) |
+| `checkUpdates` | Legacy flag (kept for compatibility; update checks are controlled by `update.enabled`) |
 
 ### Update (`update`)
 
-Update checking is **disabled by default**. PC Inform does not install updates automatically.
+Update checking is **disabled by default** and **informational only**. PC Inform does not download or install updates automatically and does not show a startup popup.
+
+When enabled, PC Inform checks `versionUrl` silently in the background. If a newer version is available and `showFooterIndicator` is **true** (default), a discreet **⬆️** indicator appears in the footer. Clicking it opens the download URL in the default browser (or the project GitHub page if no URL is set). The About dialog also shows a short notice when an update is available.
 
 | Setting | Purpose |
 |---------|---------|
-| `enabled` | Master switch for update check (default `false`) |
+| `enabled` | Master switch for background update check (default `false`) |
 | `versionUrl` | URL of remote `version.json` (default empty) |
-
-Both `update.enabled` and `features.checkUpdates` must be enabled for a check to run. When a newer version is found, the user sees a Yes/No dialog; choosing Yes opens the download URL in the default browser.
+| `showFooterIndicator` | Show footer **⬆️** when a newer version is available (default `true`) |
 
 Example remote metadata format: [docs/version.example.json](docs/version.example.json).
 
 Administrators who enable updates must host `version.json` and point `versionUrl` to it. End users normally should not change update settings.
+
+Diagnostic logs (when writable): `C:\ProgramData\PCInform\Logs\PCInform.log`
 
 ## GitHub Releases
 
@@ -150,7 +175,8 @@ Official builds are published at:
 
 Typical assets:
 
-- **PCInform-Setup.exe** — recommended installer for end users
+- **PCInform-Setup.exe** — recommended end-user installer (does not include the configurator)
+- **PCInform.Configurator.exe** — optional administrator config editor (download separately when needed)
 - **PCInform.exe** — optional portable binary (when provided)
 - **version.json** — optional metadata for deployments that enable update checks
 
@@ -159,7 +185,8 @@ Download the installer from the latest release unless your IT team provides an i
 ## Security notes
 
 - No secrets or private URLs are embedded in the application.
-- Update downloads open in the browser only; installers are never run automatically.
+- Update checks are informational only: a footer indicator and About notice — no automatic install and no startup popup
+- Optional network status indicator in the footer (Internet/DNS tooltips)
 - Company, support, and feature configuration is machine-wide; only UI language preference is per user.
 
 ## License

@@ -1,4 +1,5 @@
 using PCInform.Configuration;
+using PCInform.Models;
 
 namespace PCInform.Localization;
 
@@ -184,26 +185,90 @@ internal static class LocalizationManager
         ? "Nie udało się uruchomić TeamViewer."
         : "Could not launch TeamViewer.";
 
-    public static string UpdateAvailableTitle => WindowTitle;
+    public static string UpdateFooterIndicator => "⬆️";
 
-    public static string UpdateAvailableMessage(string version, string releaseNotes) =>
+    public static string UpdateFooterTooltip(string currentVersion, string remoteVersion) =>
         CurrentLanguage == AppLanguage.Polish
-            ? $"Dostępna jest nowa wersja {version}.\n\n{releaseNotes}\n\nCzy chcesz pobrać aktualizację?"
-            : $"A new version {version} is available.\n\n{releaseNotes}\n\nDo you want to download the update?";
+            ? $"Aktualna wersja: v{currentVersion}\nNowa wersja: v{remoteVersion}\nKliknij, aby otworzyć stronę pobierania."
+            : $"Current version: v{currentVersion}\nNew version: v{remoteVersion}\nClick to open download page.";
+
+    public static string NetworkStatusOnlineIndicator => "🌐";
+
+    public static string NetworkStatusOfflineIndicator => "⚠️";
+
+    public static string NetworkStatusTooltip(NetworkCheckState internet, NetworkCheckState dns)
+    {
+        var internetLine = FormatNetworkCheckLine(
+            CurrentLanguage == AppLanguage.Polish ? "Internet" : "Internet",
+            internet);
+        var dnsLine = FormatNetworkCheckLine(
+            "DNS",
+            dns);
+        return $"{internetLine}\n{dnsLine}";
+    }
+
+    private static string FormatNetworkCheckLine(string label, NetworkCheckState state)
+    {
+        if (CurrentLanguage == AppLanguage.Polish)
+        {
+            var value = state switch
+            {
+                NetworkCheckState.Ok => "OK",
+                NetworkCheckState.Error => "Błąd",
+                NetworkCheckState.NoConnectivity => "Brak połączenia",
+                _ => "Nie sprawdzono"
+            };
+            return $"{label}: {value}";
+        }
+
+        var englishValue = state switch
+        {
+            NetworkCheckState.Ok => "OK",
+            NetworkCheckState.Error => "Error",
+            NetworkCheckState.NoConnectivity => "No connectivity",
+            _ => "Not tested"
+        };
+        return $"{label}: {englishValue}";
+    }
+
+    public static string NetworkStatusReportLabel => CurrentLanguage == AppLanguage.Polish
+        ? "Status sieci:"
+        : "Network status:";
+
+    public static string NetworkStatusOnlineText => CurrentLanguage == AppLanguage.Polish ? "online" : "online";
+
+    public static string NetworkStatusOfflineText => CurrentLanguage == AppLanguage.Polish ? "offline" : "offline";
+
+    public static string UpdateAboutAvailable(string version) =>
+        CurrentLanguage == AppLanguage.Polish
+            ? $"Dostępna nowa wersja: v{version}"
+            : $"New version available: v{version}";
 
     public static string AboutLink => CurrentLanguage == AppLanguage.Polish ? "O aplikacji" : "About";
 
     public static string AboutDialogTitle => AboutLink;
 
     public static string AboutDescription => CurrentLanguage == AppLanguage.Polish
-        ? "Proste narzędzie do wyświetlania informacji o komputerze i przygotowania zgłoszenia do Service Desk."
-        : "Simple tool for displaying computer information and preparing a Service Desk support request.";
+        ? "PC Inform umożliwia szybki podgląd informacji o komputerze oraz przygotowanie danych potrzebnych do zgłoszenia serwisowego."
+        : "PC Inform provides quick access to computer information and support request details.";
 
     public static string AboutVersionLabel => CurrentLanguage == AppLanguage.Polish ? "Wersja:" : "Version:";
 
     public static string AboutAuthorLabel => CurrentLanguage == AppLanguage.Polish ? "Autor:" : "Author:";
 
-    public static string AboutGitHubLabel => "GitHub:";
+    public static string AboutGitHubLabel =>
+        CurrentLanguage == AppLanguage.Polish ? "Projekt:" : "Project:";
+
+    public static string AboutLicenseLabel =>
+        CurrentLanguage == AppLanguage.Polish ? "Licencja:" : "License:";
+
+    public static string AboutLicenseName => "MIT License";
+
+    public static string AboutLicenseNote => CurrentLanguage == AppLanguage.Polish
+        ? "Bezpłatna do użytku prywatnego i komercyjnego."
+        : "Free for personal and commercial use.";
+
+    public static string AboutGitHubButton => "GitHub";
 
     public const string AboutAuthorName = "Michał Watkowski";
 
