@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-05-27
+
+### Added
+
+- Final application icon for the main app, configurator, installer, and shortcuts
+
+### Fixed
+
+- SemVer update comparison for prerelease tags (e.g. `-dev`, `-rc1`)
+
+### Changed
+
+- Update and network status footer tooltips (current vs new version; Internet/DNS details)
+
 ## [1.2.0] - 2026-06-13
 
 ### Added
@@ -50,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Outlook Classic COM draft support with `mailto:` fallback
 - Optional remote update check via `version.json`
 
+[1.2.1]: https://github.com/TimeWizard007/pcinform/releases/tag/v1.2.1
 [1.2.0]: https://github.com/TimeWizard007/pcinform/releases/tag/v1.2.0
 [1.1.0]: https://github.com/TimeWizard007/pcinform/releases/tag/v1.1.0
 [1.0.0]: https://github.com/TimeWizard007/pcinform/releases/tag/v1.0.0

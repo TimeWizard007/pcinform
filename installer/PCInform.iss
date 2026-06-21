@@ -4,6 +4,7 @@
 
 #define AppName "PC Inform"
 #define AppExe "PCInform.exe"
+#define AppIcon "..\PCInform\icon.ico"
 #define PublishDir "..\PCInform\bin\Release\net8.0-windows\win-x64\publish"
 #define ExampleConfig "..\appsettings.example.json"
 
@@ -11,7 +12,9 @@
 AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
 AppName={#AppName}
 AppVersion=1.2.1
-AppVerName=PC Inform v1.2.1-dev
+AppVerName=PC Inform v1.2.1
+SetupIconFile={#AppIcon}
+UninstallDisplayIcon={app}\{#AppExe}
 AppPublisher=pcinform
 DefaultDirName={autopf}\PCInform
 DefaultGroupName={#AppName}
@@ -40,8 +43,8 @@ Source: "{src}\appsettings.json"; DestDir: "{commonappdata}\PCInform"; DestName:
 Source: "{#ExampleConfig}"; DestDir: "{commonappdata}\PCInform"; DestName: "appsettings.json"; Flags: onlyifdoesntexist
 
 [Icons]
-Name: "{commonprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
-Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
+Name: "{commonprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"; IconFilename: "{app}\{#AppExe}"
+Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; IconFilename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
