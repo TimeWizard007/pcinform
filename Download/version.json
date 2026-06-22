@@ -1,7 +1,7 @@
 {
-  "version": "1.2.2-dev",
-  "downloadUrl": "https://github.com/TimeWizard007/pcinform/releases",
+  "version": "1.2.1",
+  "downloadUrl": "https://github.com/TimeWizard007/pcinform/releases/tag/v1.2.1",
   "mandatory": false,
-  "releaseNotesPl": "Poprawiono tooltipy statusu sieci i aktualizacji.",
-  "releaseNotesEn": "Improved network and update status tooltips."
+  "releaseNotesPl": "Pierwsze publiczne wydanie PC Inform.",
+  "releaseNotesEn": "First public release of PC Inform."
 }
