@@ -1,3 +1,5 @@
+🇬🇧 English | [🇵🇱 Polish](README_PL.md)
+
 # PC Inform
 
 **PC Inform** is a lightweight Windows desktop utility for help desks and IT teams. It collects essential PC and user information and makes it easy to copy details or prepare a support email — without requiring administrator rights to run the application.
